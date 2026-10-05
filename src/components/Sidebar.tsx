@@ -11,7 +11,18 @@ import {
   LogOut, 
   User as UserIcon,
   Lock,
-  CheckCircle2
+  CheckCircle2,
+  Target,
+  FileText,
+  AlertTriangle,
+  Users,
+  Activity,
+  BarChart3,
+  Settings,
+  FolderTree,
+  Repeat,
+  CreditCard,
+  Smartphone
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,18 +45,39 @@ export default function Sidebar({
   onLogout,
   onOpenAuth,
 }: SidebarProps) {
-  const navItems = [
+  // User Core Navigation Items
+  const userNav = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
     { id: 'budgets', label: 'Budgets', icon: PieChart },
+    { id: 'goals', label: 'Goals', icon: Target },
+    { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'ai', label: 'AI Assistant', icon: Sparkles, badge: 'Smart' },
-    { id: 'audit', label: 'Audit Logs', icon: History, badge: 'SHA-256' },
+    { id: 'alerts', label: 'Alerts', icon: AlertTriangle, badge: '2 Active' },
+  ];
+
+  // Admin Console Sections
+  const adminNav = [
+    { id: 'admin-users', label: 'Users', icon: Users },
+    { id: 'admin-security', label: 'Security', icon: Shield },
+    { id: 'admin-audit', label: 'Audit Logs', icon: History, badge: 'SHA-256' },
+    { id: 'admin-health', label: 'Health', icon: Activity },
+    { id: 'admin-analytics', label: 'Analytics', icon: BarChart3 },
+  ];
+
+  // User Settings Sub-routes
+  const settingsNav = [
+    { id: 'settings-categories', label: 'Categories', icon: FolderTree },
+    { id: 'settings-recurring', label: 'Recurring', icon: Repeat },
+    { id: 'settings-subscriptions', label: 'Subscriptions', icon: CreditCard },
+    { id: 'settings-sessions', label: 'Sessions', icon: Smartphone },
+    { id: 'settings-security', label: 'Security & 2FA', icon: Lock },
   ];
 
   return (
-    <aside className="w-64 min-w-[16rem] bg-slate-900 border-r border-slate-800 flex flex-col justify-between h-screen sticky top-0 shrink-0 select-none">
+    <aside className="w-64 min-w-[16rem] bg-slate-900 border-r border-slate-800 flex flex-col justify-between h-screen sticky top-0 shrink-0 select-none overflow-y-auto">
       {/* Top Header & Brand */}
-      <div className="p-6">
+      <div className="p-5">
         <div 
           className="flex items-center gap-3 cursor-pointer group" 
           onClick={() => onTabChange('dashboard')}
@@ -67,7 +99,7 @@ export default function Sidebar({
         </div>
 
         {/* Security Badges */}
-        <div className="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between gap-2">
+        <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-[10px] font-mono text-slate-300">
             <Lock className="w-3 h-3 text-indigo-400" />
             <span>AES-256</span>
@@ -78,37 +110,33 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Navigation Section */}
-        <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 px-3 mb-2">
-            Platform Navigation
+        {/* 1. Main Navigation */}
+        <div className="mt-5">
+          <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 px-3 mb-1.5">
+            Finance Core
           </div>
-          <nav className="space-y-1">
-            {navItems.map((item) => {
+          <nav className="space-y-0.5">
+            {userNav.map((item) => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                     isActive
                       ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                        isActive
-                          ? 'bg-white/20 text-white font-bold'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700'
-                      }`}
-                    >
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700'
+                    }`}>
                       {item.badge}
                     </span>
                   )}
@@ -117,10 +145,84 @@ export default function Sidebar({
             })}
           </nav>
         </div>
+
+        {/* 2. ADMIN SECTION (Strictly visible only for ADMIN role) */}
+        {user?.role === 'ADMIN' && (
+          <div className="mt-5 pt-3 border-t border-slate-800/80">
+            <div className="flex items-center justify-between px-3 mb-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400">
+                ADMIN CONSOLE
+              </span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono">
+                RBAC
+              </span>
+            </div>
+            <nav className="space-y-0.5">
+              {adminNav.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onTabChange(item.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      isActive
+                        ? 'bg-amber-600 text-white font-semibold shadow-md shadow-amber-600/30'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-amber-400'}`} />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.badge && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                      }`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+
+        {/* 3. SETTINGS SECTION */}
+        {user && (
+          <div className="mt-5 pt-3 border-t border-slate-800/80">
+            <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500 px-3 mb-1.5">
+              Settings & Preferences
+            </div>
+            <nav className="space-y-0.5">
+              {settingsNav.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onTabChange(item.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                      isActive
+                        ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      <span>{item.label}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
       </div>
 
       {/* Bottom Profile / Account Area */}
-      <div className="p-4 border-t border-slate-800 bg-slate-900/50">
+      <div className="p-4 border-t border-slate-800 bg-slate-900/50 sticky bottom-0">
         {user ? (
           <div className="space-y-3">
             <div className="p-3 rounded-xl bg-slate-800/70 border border-slate-700/50 flex items-center justify-between gap-3">

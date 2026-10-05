@@ -14,8 +14,19 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get('search')?.trim() || '';
   const categoryId = searchParams.get('category')?.trim() || '';
   const type = searchParams.get('type')?.trim() || ''; // 'INCOME' | 'EXPENSE'
-  const startDate = searchParams.get('startDate')?.trim() || '';
-  const endDate = searchParams.get('endDate')?.trim() || '';
+  
+  // Bug fix: support both 'from'/'to' and 'startDate'/'endDate' params
+  const fromParam = searchParams.get('from')?.trim() || searchParams.get('startDate')?.trim() || '';
+  const toParam = searchParams.get('to')?.trim() || searchParams.get('endDate')?.trim() || '';
+
+  // Validate date bounds: if from > to, return 400
+  if (fromParam && toParam && fromParam > toParam) {
+    return NextResponse.json(
+      { error: 'Invalid date range: "From" date cannot be after "To" date.' },
+      { status: 400 }
+    );
+  }
+
   const minAmount = searchParams.get('minAmount') ? parseInt(searchParams.get('minAmount')!) : null;
   const maxAmount = searchParams.get('maxAmount') ? parseInt(searchParams.get('maxAmount')!) : null;
   const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
@@ -40,13 +51,14 @@ export async function GET(req: NextRequest) {
     conditions.push('t.type = ?');
     params.push(type);
   }
-  if (startDate) {
-    conditions.push('t.date >= ?');
-    params.push(startDate);
+  // Date filtering with standard comparison across ISO dates (YYYY-MM-DD)
+  if (fromParam) {
+    conditions.push('substr(t.date, 1, 10) >= ?');
+    params.push(fromParam);
   }
-  if (endDate) {
-    conditions.push('t.date <= ?');
-    params.push(endDate);
+  if (toParam) {
+    conditions.push('substr(t.date, 1, 10) <= ?');
+    params.push(toParam);
   }
   if (minAmount !== null && !isNaN(minAmount)) {
     conditions.push('t.amount >= ?');
@@ -80,6 +92,10 @@ export async function GET(req: NextRequest) {
       t.date,
       t.payment_method,
       t.notes,
+      t.tags,
+      t.receipt_key,
+      t.is_recurring,
+      t.recurrence_rule,
       t.created_at,
       t.updated_at,
       c.name as category_name,
@@ -151,11 +167,15 @@ export async function POST(req: NextRequest) {
 
     const txId = `tx_${crypto.randomUUID()}`;
     const now = new Date().toISOString();
+    const tagsJson = body.tags ? JSON.stringify(body.tags) : null;
+    const isRecurring = body.isRecurring ? 1 : 0;
+    const recurrenceRule = body.recurrenceRule || null;
+    const receiptKey = body.receiptKey || null;
 
     db.prepare(`
-      INSERT INTO transactions (id, user_id, category_id, amount, type, description, date, payment_method, notes, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(txId, userId, categoryId, amount, type, description.trim(), date, paymentMethod, notes || null, now, now);
+      INSERT INTO transactions (id, user_id, category_id, amount, type, description, date, payment_method, notes, tags, receipt_key, is_recurring, recurrence_rule, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(txId, userId, categoryId, amount, type, description.trim(), date, paymentMethod, notes || null, tagsJson, receiptKey, isRecurring, recurrenceRule, now, now);
 
     logAuditEvent({
       userId,

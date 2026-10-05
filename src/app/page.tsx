@@ -7,15 +7,16 @@ import TransactionsView from '@/components/TransactionsView';
 import BudgetsView from '@/components/BudgetsView';
 import AiAssistantView from '@/components/AiAssistantView';
 import AuditLogsView from '@/components/AuditLogsView';
+import GoalsView from '@/components/GoalsView';
+import ReportsView from '@/components/ReportsView';
+import AlertsView from '@/components/AlertsView';
+import AdminUsersView from '@/components/AdminUsersView';
+import AdminSecurityView from '@/components/AdminSecurityView';
+import AdminHealthView from '@/components/AdminHealthView';
+import AdminAnalyticsView from '@/components/AdminAnalyticsView';
+import SettingsViews from '@/components/SettingsViews';
 import AuthModal from '@/components/AuthModal';
-import { 
-  Shield, 
-  Lock, 
-  Sparkles, 
-  Database, 
-  ArrowRight,
-  Cpu
-} from 'lucide-react';
+import { Shield, Lock, Database, ArrowRight, Cpu } from 'lucide-react';
 
 export default function HomePage() {
   const [user, setUser] = useState<{
@@ -119,11 +120,12 @@ export default function HomePage() {
         onOpenAuth={() => setAuthModalOpen(true)}
       />
 
-      {/* Main Dashboard Area (Right) */}
+      {/* Main Content Area (Right) */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
         <main className="flex-1 p-8 overflow-y-auto">
           {user ? (
             <div className="max-w-7xl mx-auto w-full">
+              {/* Core User Tabs */}
               {currentTab === 'dashboard' && (
                 <DashboardView
                   data={dashboardData}
@@ -151,6 +153,10 @@ export default function HomePage() {
                 />
               )}
 
+              {currentTab === 'goals' && <GoalsView />}
+              {currentTab === 'reports' && <ReportsView />}
+              {currentTab === 'alerts' && <AlertsView />}
+
               {currentTab === 'ai' && (
                 <AiAssistantView
                   userHasKey={!!user.hasApiKey}
@@ -159,12 +165,22 @@ export default function HomePage() {
                 />
               )}
 
-              {currentTab === 'audit' && (
-                <AuditLogsView isAdmin={user.role === 'ADMIN'} />
-              )}
+              {/* Admin Console Sections */}
+              {currentTab === 'admin-users' && <AdminUsersView />}
+              {currentTab === 'admin-security' && <AdminSecurityView />}
+              {currentTab === 'admin-audit' && <AuditLogsView isAdmin={true} />}
+              {currentTab === 'admin-health' && <AdminHealthView />}
+              {currentTab === 'admin-analytics' && <AdminAnalyticsView />}
+
+              {/* User Settings Sub-routes */}
+              {currentTab === 'settings-categories' && <SettingsViews subTab="categories" />}
+              {currentTab === 'settings-recurring' && <SettingsViews subTab="recurring" />}
+              {currentTab === 'settings-subscriptions' && <SettingsViews subTab="subscriptions" />}
+              {currentTab === 'settings-sessions' && <SettingsViews subTab="sessions" />}
+              {currentTab === 'settings-security' && <SettingsViews subTab="security" />}
             </div>
           ) : (
-            /* Unauthenticated State in Main Area */
+            /* Unauthenticated Landing */
             <div className="max-w-4xl mx-auto py-16 space-y-12">
               <div className="text-center space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
@@ -174,9 +190,7 @@ export default function HomePage() {
 
                 <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
                   Enterprise Personal Finance & <br />
-                  <span className="text-indigo-400">
-                    Tamper-Evident Security
-                  </span>
+                  <span className="text-indigo-400">Tamper-Evident Security</span>
                 </h1>
 
                 <p className="text-slate-400 text-sm max-w-xl mx-auto leading-relaxed">
@@ -194,7 +208,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Security Architecture Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 space-y-2.5">
                   <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
