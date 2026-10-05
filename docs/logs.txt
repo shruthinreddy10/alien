@@ -351,3 +351,194 @@ Actions Taken:
 * Started production server on http://localhost:3000
 
 
+================================================================================
+[2026-10-05T14:48:00+05:30] Layout & RBAC Hotfix: Route-Aware Shell & Admin Isolation
+================================================================================
+User Prompt (verbatim):
+=====================================================================
+11. LAYOUT & RBAC HOTFIX — Route-Aware Shell + Admin Isolation
+=====================================================================
+
+--- 11.1 PROBLEM STATEMENT ---
+Two layout/authorization bugs must be fixed:
+
+  BUG A: The sidebar (app shell) renders on the LOGIN / REGISTER pages.
+         It must only appear AFTER successful authentication.
+
+  BUG B: When an ADMIN logs in, the personal finance sections
+         (Overview, Transactions, Budgets, AI Assistant, Goals,
+         Reports, Alerts, Settings) are visible in the sidebar.
+         This is a DATA LEAK: admin is a platform operator, not a
+         finance user. Admin must NEVER see personal finance data
+         of any user, including their own accidental account.
+
+--- 11.2 ROUTE-AWARE APP SHELL ---
+The app must have two distinct layout modes:
+
+  MODE 1 — PUBLIC SHELL (no sidebar, no topbar)
+    Routes:
+      /login
+      /register
+      /forgot-password
+      /reset-password/[token]
+      /verify-email
+      / (landing)
+    Layout:
+      - Full-screen split or centered card
+      - Brand story / security badges on one side
+      - No sidebar, no app chrome, no user menu
+      - If an authenticated user visits these, redirect:
+          USER  -> /overview
+          ADMIN -> /admin/users
+
+  MODE 2 — AUTHENTICATED SHELL (sidebar + topbar)
+    Routes: everything under (app) group
+    Layout:
+      - Sidebar + topbar + main content
+      - Sidebar contents depend on role (see 11.3)
+
+--- 11.3 ROLE-SCOPED SIDEBAR ---
+Sidebar must render different nav items per role. Zero overlap.
+
+  USER sidebar:
+    ── Personal Finance ──
+      Overview          /overview
+      Transactions      /transactions
+      Budgets           /budgets
+      Goals             /goals
+      Reports           /reports
+      AI Assistant      /ai
+      Alerts            /alerts
+    ── Account ──
+      Settings          /settings
+    Bottom: user chip (name, email, USER badge) + Sign out
+
+  ADMIN sidebar:
+    ── Admin Console ──
+      Users             /admin/users
+      Security          /admin/security
+      Audit Logs        /admin/audit
+      Health            /admin/health
+      Analytics         /admin/analytics
+    Bottom: admin chip (name, email, ADMIN badge) + Sign out
+
+  What must NOT appear for ADMIN:
+    - Overview, Transactions, Budgets, Goals, Reports,
+      AI Assistant, Alerts, Settings
+    - No KPI cards, no charts, no personal finance widgets
+    - No "Add Transaction" button anywhere
+
+--- 11.4 BACKEND ENFORCEMENT (defense in depth) ---
+Frontend hiding is NOT enough. Add server-side guards:
+
+  requireUser()  dependency:
+    - session valid
+    - role == USER
+    - else 403 with { error: { code: "FORBIDDEN" } }
+
+  requireAdmin() dependency:
+    - session valid
+    - role == ADMIN
+    - else 403
+
+  Apply to route groups:
+    /api/v1/transactions/*     -> requireUser
+    /api/v1/budgets/*          -> requireUser
+    /api/v1/categories/*       -> requireUser
+    /api/v1/ai/*               -> requireUser
+    /api/v1/goals/*            -> requireUser
+    /api/v1/reports/*          -> requireUser
+    /api/v1/dashboard/*        -> requireUser
+    /api/v1/export/*           -> requireUser
+    /api/v1/admin/*            -> requireAdmin
+
+  Hard rules:
+    - An ADMIN session calling ANY /api/v1/transactions/* returns 403.
+    - An ADMIN session calling /api/v1/dashboard/* returns 403.
+    - A USER session calling /api/v1/admin/* returns 403.
+    - Every 403 is audit-logged with { actor_id, actor_role, path,
+      method, reason: "role_mismatch" }.
+
+--- 11.5 ADMIN HOME REDIRECT ---
+  - After successful login as ADMIN -> redirect to /admin/users
+  - Visiting / or /overview or /transactions as ADMIN -> redirect
+    to /admin/users (do not render finance pages)
+  - After successful login as USER -> redirect to /overview
+  - Visiting /admin/* as USER -> 403 page
+
+--- 11.6 LOGIN PAGE POLISH ---
+  - Full-screen, no shell
+  - Centered card or split layout
+  - Brand logo + tagline
+  - Security badges row: "Argon2id", "AES-256-GCM", "RBAC"
+  - Tabs: Sign in / Create account
+  - Inline validation, password strength meter, show/hide toggle
+
+--- 11.7 DEMO SCRIPT (updated) ---
+  1. Open app -> land on /login, NO sidebar visible
+  2. Log in as user@demo.com -> sidebar appears with personal finance sections -> dashboard shows KPIs
+  3. Sign out -> back to /login, sidebar gone
+  4. Log in as admin@demo.com -> sidebar shows ONLY Admin Console -> lands on /admin/users
+  5. As admin, manually visit /transactions in URL bar -> 403 page + audit log entry created
+  6. Open /admin/audit -> see the 403 entry with reason "role_mismatch"
+
+Agent Response:
+Resolved both layout and data isolation vulnerabilities:
+1. Implemented Mode 1 Public Shell: Completely eliminates sidebar and navigation chrome for unauthenticated users, rendering a full-screen split layout with security story, Argon2id/AES-256-GCM/Strict RBAC badges, password strength meter, show/hide password toggle, and instant 1-click evaluation access.
+2. Implemented Mode 2 Authenticated Shell with strict Role-Scoped Sidebar:
+   - For USER: Displays strictly personal finance items (Overview, Transactions, Budgets, Goals, Reports, AI Assistant, Alerts) and Account Settings. Zero admin console items.
+   - For ADMIN: Displays strictly Admin Console sections (Users, Security, Audit Logs, Health, Analytics). Zero personal finance items, KPI cards, charts, or Add Transaction buttons.
+3. Implemented Backend Defense-in-Depth in src/lib/auth-helper.ts:
+   - requireUser(): Validates active session and requires role === 'USER'. Rejects ADMIN attempts with HTTP 403 { error: { code: 'FORBIDDEN' } } and automatically logs an ACCESS_DENIED_ROLE_MISMATCH audit event containing actor_role, required_role, path, method, and reason: "role_mismatch".
+   - requireAdmin(): Validates active session and requires role === 'ADMIN'. Rejects USER attempts with HTTP 403 and logs role_mismatch audit event.
+   - Applied requireUser() across all personal finance APIs (/api/dashboard, /api/transactions, /api/transactions/[id], /api/budgets, /api/budgets/[id], /api/categories, /api/goals, /api/recurring, /api/subscriptions, /api/alerts, /api/export, /api/ai/chat, /api/ai/keys, /api/ai/messages).
+   - Applied requireAdmin() across all admin console APIs (/api/admin/users, /api/admin/security, /api/admin/audit-logs, /api/admin/analytics).
+4. Enforced Cross-Role Navigation Guards: Added styled HTTP 403 Forbidden screens with role explanation and 'Return to Dashboard' / 'Return to Admin Console' CTA when unauthorized cross-tab navigation is attempted.
+5. Automated test verified:
+   - user@demo.com calling /api/transactions returns 200 OK.
+   - admin@demo.com calling /api/transactions returns 403 Forbidden with { code: 'FORBIDDEN' }.
+   - admin@demo.com calling /api/dashboard returns 403 Forbidden with { code: 'FORBIDDEN' }.
+   - user@demo.com calling /api/admin/users returns 403 Forbidden.
+   - admin@demo.com calling /api/admin/users returns 200 OK.
+   - /api/admin/audit-logs confirms 2 role_mismatch audit trail entries created with SHA-256 cryptographic hashes.
+
+Agent Response Summary:
+Fixed sidebar rendering on public login view and enacted total admin personal finance isolation. Enforced requireUser() on all finance endpoints and requireAdmin() on admin endpoints, with automated audit logging on role mismatch. Tested all 4 role-by-route combinations successfully.
+
+Commit SHA:
+e57b7b3
+
+Files Modified / Created:
+* src/lib/auth-helper.ts (Modified)
+* src/components/Sidebar.tsx (Modified)
+* src/components/AuthModal.tsx (Modified)
+* src/app/page.tsx (Modified)
+* src/app/api/dashboard/route.ts (Modified)
+* src/app/api/transactions/route.ts (Modified)
+* src/app/api/transactions/[id]/route.ts (Modified)
+* src/app/api/budgets/route.ts (Modified)
+* src/app/api/budgets/[id]/route.ts (Modified)
+* src/app/api/categories/route.ts (Modified)
+* src/app/api/export/route.ts (Modified)
+* src/app/api/goals/route.ts (Modified)
+* src/app/api/recurring/route.ts (Modified)
+* src/app/api/subscriptions/route.ts (Modified)
+* src/app/api/alerts/route.ts (Modified)
+* src/app/api/ai/chat/route.ts (Modified)
+* src/app/api/ai/messages/route.ts (Modified)
+* src/app/api/ai/keys/route.ts (Modified)
+* src/app/api/admin/users/route.ts (Modified)
+* src/app/api/admin/security/route.ts (Modified)
+* src/app/api/admin/audit-logs/route.ts (Modified)
+* src/app/api/admin/analytics/route.ts (Modified)
+
+Actions Taken:
+* Created requireUser() server-side dependency with automated role_mismatch audit logging
+* Replaced requireAuth with requireUser across all 14 personal finance endpoints
+* Added strict role-isolated navigation rendering in Sidebar.tsx with zero nav overlap
+* Completely removed sidebar rendering in unauthenticated Mode 1 Public Shell
+* Enhanced public authentication view and AuthModal with Argon2id / AES-256-GCM / RBAC badges, password strength meter, and show/hide password toggle
+* Added styled 403 Forbidden screen in frontend for role-cross navigation with Return CTA
+* Verified Next.js Turbopack production build (0 errors)
+* Verified end-to-end RBAC test: confirmed 403 on role mismatch and verified SHA-256 audit log emission
+* Committed changes to git (commit e57b7b3)
