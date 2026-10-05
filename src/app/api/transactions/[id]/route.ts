@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, getClientIp } from '@/lib/auth-helper';
+import { requireUser, getClientIp } from '@/lib/auth-helper';
 import { getDb } from '@/lib/db';
 import { TransactionUpdateSchema } from '@/lib/schemas';
 import { logAuditEvent } from '@/lib/security';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = requireAuth(req);
+  const auth = requireUser(req);
   if ('errorResponse' in auth) return auth.errorResponse;
   const userId = auth.session.userId;
   const { id } = await params;
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = requireAuth(req);
+  const auth = requireUser(req);
   if ('errorResponse' in auth) return auth.errorResponse;
   const userId = auth.session.userId;
   const { id } = await params;
@@ -114,7 +114,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = requireAuth(req);
+  const auth = requireUser(req);
   if ('errorResponse' in auth) return auth.errorResponse;
   const userId = auth.session.userId;
   const { id } = await params;

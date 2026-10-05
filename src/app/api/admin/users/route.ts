@@ -7,14 +7,6 @@ import { logAuditEvent, hashPassword } from '@/lib/security';
 export async function GET(req: NextRequest) {
   const auth = requireAdmin(req);
   if ('errorResponse' in auth) {
-    // Log unauthorized access attempt
-    logAuditEvent({
-      userId: null,
-      action: 'ADMIN_ACCESS_DENIED',
-      entityType: 'admin/users',
-      details: { url: req.url },
-      ipAddress: getClientIp(req),
-    });
     return auth.errorResponse;
   }
 

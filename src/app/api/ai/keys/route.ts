@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'node:crypto';
-import { requireAuth, getClientIp } from '@/lib/auth-helper';
+import { requireUser, getClientIp } from '@/lib/auth-helper';
 import { getDb } from '@/lib/db';
 import { AiKeySaveSchema } from '@/lib/schemas';
 import { encryptApiKey, logAuditEvent } from '@/lib/security';
 
 export async function POST(req: NextRequest) {
-  const auth = requireAuth(req);
+  const auth = requireUser(req);
   if ('errorResponse' in auth) return auth.errorResponse;
   const userId = auth.session.userId;
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const auth = requireAuth(req);
+  const auth = requireUser(req);
   if ('errorResponse' in auth) return auth.errorResponse;
   const userId = auth.session.userId;
 

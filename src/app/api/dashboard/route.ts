@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth-helper';
+import { requireUser } from '@/lib/auth-helper';
 import { getDb } from '@/lib/db';
 import { calculateBudgetStatus } from '@/lib/money';
 
 export async function GET(req: NextRequest) {
-  const auth = requireAuth(req);
+  const auth = requireUser(req);
   if ('errorResponse' in auth) return auth.errorResponse;
   const userId = auth.session.userId;
 
