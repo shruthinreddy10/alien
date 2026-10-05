@@ -4,16 +4,16 @@
 # - If your team has 4 members: provide all 4 members.
 
 team:
-  team_id: ""
-  name: ""
-  repository: "" # URL of the newly created GitHub repository for this project
+  team_id: "76"
+  name: "SleetAce Squad"
+  repository: "https://github.com/shruthinreddy10/alien"
 
 members:
-  - name: ""
-    email: ""
-  - name: ""
-    email: ""
-  - name: ""
-    email: ""
-  - name: ""
-    email: ""
+  - name: "S. Shruthin Reddy"
+    email: "shruthinreddy10@gmail.com"
+  - name: "Syed Sameer Uddin"
+    email: "sydsameer92@gmail.com"
+  - name: "V. Revanth Reddy"
+    email: "revanthreddy2312@gmail.com"
+  - name: "V. Srikanth Yadav"
+    email: "vattisrikanth433@gmail.com"

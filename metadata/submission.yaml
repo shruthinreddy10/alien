@@ -4,8 +4,8 @@
 version: "1.0"
 
 submission:
-  team_id: ""
-  repository: ""
+  team_id: "76"
+  repository: "https://github.com/shruthinreddy10/alien"
   commit_sha: ""
   deployment_url: ""
   submitted_at: ""

@@ -1,8 +1,8 @@
 # Project Approach & Architecture — Build Secure 24
 
-**Team ID:** [Pending Team Registration]  
+**Team ID:** 76  
 **Project Name:** FinTrack — Personal Finance & AI Assistant  
-**Team Size:** [2 or 4 Members]  
+**Team Size:** 4 Members (SleetAce Squad)  
 **Primary Track / Domain:** Secure FinTech & Applied AI  
 
 ---
