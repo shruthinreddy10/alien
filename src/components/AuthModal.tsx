@@ -74,11 +74,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-md p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl space-y-6">
+      <div className="bg-slate-900 border border-slate-800 w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
               <Shield className="w-4 h-4" />
             </div>
             <div>
@@ -97,7 +97,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         </div>
 
         {/* Quick 1-Click Demo Login Banner */}
-        <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-2">
+        <div className="p-3.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2">
           <div className="text-[11px] font-semibold text-indigo-300 flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span>Instant Hackathon Evaluation Access</span>
@@ -107,7 +107,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               type="button"
               onClick={() => handleDemoLogin('user@demo.com', 'Password123!')}
               disabled={loading}
-              className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-medium transition-all text-left"
+              className="py-2.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-700 text-slate-200 font-medium transition-all text-left"
             >
               <div className="font-bold text-emerald-400">Regular User</div>
               <div className="text-[10px] text-slate-400 font-mono">user@demo.com</div>
@@ -117,7 +117,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               type="button"
               onClick={() => handleDemoLogin('admin@demo.com', 'AdminPass123!')}
               disabled={loading}
-              className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-medium transition-all text-left"
+              className="py-2.5 px-3 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-700 text-slate-200 font-medium transition-all text-left"
             >
               <div className="font-bold text-amber-400">Security Admin</div>
               <div className="text-[10px] text-slate-400 font-mono">admin@demo.com</div>
@@ -126,7 +126,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
             {error}
           </div>
         )}
@@ -144,7 +144,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   placeholder="e.g. John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 placeholder="name@domain.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500"
+                className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
               />
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500"
+                className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
               />
             </div>
             {isRegister && (
@@ -188,14 +188,14 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
           >
             <span>{loading ? 'Processing...' : isRegister ? 'Create Account' : 'Sign In'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>
 
-        <div className="text-center pt-2 border-t border-white/5 text-xs text-slate-400">
+        <div className="text-center pt-2 border-t border-slate-800 text-xs text-slate-400">
           {isRegister ? (
             <span>
               Already have an account?{' '}

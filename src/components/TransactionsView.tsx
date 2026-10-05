@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, 
-  Filter, 
   Plus, 
   Trash2, 
   Edit3, 
@@ -220,7 +219,7 @@ export default function TransactionsView({
   return (
     <div className="space-y-6">
       {/* Search & Filter Header */}
-      <div className="glass-panel p-5 rounded-2xl space-y-4">
+      <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Search bar */}
           <div className="relative flex-1">
@@ -233,12 +232,12 @@ export default function TransactionsView({
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
           {/* Quick Type Select */}
-          <div className="flex items-center gap-1 bg-white/5 border border-white/10 p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 p-1 rounded-lg">
             {(['ALL', 'EXPENSE', 'INCOME'] as const).map((t) => (
               <button
                 key={t}
@@ -246,7 +245,7 @@ export default function TransactionsView({
                   setType(t);
                   setPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   type === t
                     ? 'bg-indigo-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-slate-200'
@@ -259,7 +258,7 @@ export default function TransactionsView({
         </div>
 
         {/* Multi-Filter Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/5 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800 text-xs">
           {/* Category Filter */}
           <div>
             <label className="block text-[11px] text-slate-400 mb-1">Category</label>
@@ -269,7 +268,7 @@ export default function TransactionsView({
                 setCategory(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
             >
               <option value="">All Categories</option>
               {categories.map((c) => (
@@ -290,7 +289,7 @@ export default function TransactionsView({
                 setStartDate(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -304,7 +303,7 @@ export default function TransactionsView({
                 setEndDate(e.target.value);
                 setPage(1);
               }}
-              className="w-full px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
@@ -321,7 +320,7 @@ export default function TransactionsView({
                 setMaxAmount('');
                 setPage(1);
               }}
-              className="w-full py-1.5 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-medium transition-all text-center"
+              className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium transition-all text-center"
             >
               Clear Filters
             </button>
@@ -330,8 +329,8 @@ export default function TransactionsView({
       </div>
 
       {/* Transaction Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
-        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+      <div className="border border-slate-800 bg-slate-900/90 rounded-xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="text-xs text-slate-400">
             Showing <span className="text-white font-semibold">{transactions.length}</span> of{' '}
             <span className="text-white font-semibold">{totalCount}</span> entries
@@ -343,7 +342,7 @@ export default function TransactionsView({
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-white/[0.02] text-slate-400 border-b border-white/5 font-semibold">
+            <thead className="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold">
               <tr>
                 <th className="py-3 px-4">Date</th>
                 <th className="py-3 px-4">Description</th>
@@ -353,7 +352,7 @@ export default function TransactionsView({
                 <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-slate-200">
+            <tbody className="divide-y divide-slate-800 text-slate-200">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
@@ -368,7 +367,7 @@ export default function TransactionsView({
                 </tr>
               ) : (
                 transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
+                  <tr key={tx.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="py-3 px-4 font-mono text-slate-400">{tx.date}</td>
                     <td className="py-3 px-4">
                       <div className="font-medium text-white">{tx.description}</div>
@@ -376,7 +375,7 @@ export default function TransactionsView({
                     </td>
                     <td className="py-3 px-4">
                       <span
-                        className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium"
                         style={{
                           backgroundColor: `${tx.category_color || '#6366F1'}20`,
                           color: tx.category_color || '#818CF8',
@@ -407,14 +406,14 @@ export default function TransactionsView({
                       <div className="flex items-center justify-center gap-1">
                         <button
                           onClick={() => setEditingTx(tx)}
-                          className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-indigo-400 transition-colors"
+                          className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-indigo-400 transition-colors"
                           title="Edit transaction"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(tx.id)}
-                          className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                          className="p-1.5 rounded-md hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
                           title="Delete transaction"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -430,7 +429,7 @@ export default function TransactionsView({
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="p-4 border-t border-white/5 flex items-center justify-between text-xs">
+          <div className="p-4 border-t border-slate-800 flex items-center justify-between text-xs">
             <span className="text-slate-400">
               Page {page} of {totalPages}
             </span>
@@ -438,14 +437,14 @@ export default function TransactionsView({
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -456,33 +455,33 @@ export default function TransactionsView({
 
       {/* Add / Edit Transaction Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="glass-panel w-full max-w-md p-6 rounded-2xl border border-white/10 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <h3 className="font-bold text-sm text-white">
                 {editingTx ? 'Edit Transaction' : 'Record New Transaction'}
               </h3>
               <button
                 onClick={closeModal}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {formError && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
                 {formError}
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               {/* Type Switcher */}
-              <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 border border-white/10 rounded-xl">
+              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-lg">
                 <button
                   type="button"
                   onClick={() => setFormType('EXPENSE')}
-                  className={`py-2 rounded-lg font-semibold transition-all ${
+                  className={`py-2 rounded-md font-semibold transition-all ${
                     formType === 'EXPENSE'
                       ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                       : 'text-slate-400 hover:text-white'
@@ -493,7 +492,7 @@ export default function TransactionsView({
                 <button
                   type="button"
                   onClick={() => setFormType('INCOME')}
-                  className={`py-2 rounded-lg font-semibold transition-all ${
+                  className={`py-2 rounded-md font-semibold transition-all ${
                     formType === 'INCOME'
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       : 'text-slate-400 hover:text-white'
@@ -513,7 +512,7 @@ export default function TransactionsView({
                   placeholder="0.00"
                   value={formAmountStr}
                   onChange={(e) => setFormAmountStr(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white font-mono text-sm focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-indigo-500"
                 />
                 <p className="text-[10px] text-slate-500 mt-1">
                   Stored as exact integer cents ({parseToCents(formAmountStr)} minor units)
@@ -529,7 +528,7 @@ export default function TransactionsView({
                   placeholder="e.g. Whole Foods Market, Salary, Rent"
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -541,7 +540,7 @@ export default function TransactionsView({
                     value={formCategoryId}
                     onChange={(e) => setFormCategoryId(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                   >
                     <option value="" disabled>Select Category</option>
                     {categories.map((c) => (
@@ -559,7 +558,7 @@ export default function TransactionsView({
                     required
                     value={formDate}
                     onChange={(e) => setFormDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                   >
                   </input>
                 </div>
@@ -571,7 +570,7 @@ export default function TransactionsView({
                 <select
                   value={formMethod}
                   onChange={(e) => setFormMethod(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                 >
                   <option value="Card" className="bg-slate-900 text-white">Credit / Debit Card</option>
                   <option value="Bank" className="bg-slate-900 text-white">Bank Wire / ACH</option>
@@ -588,7 +587,7 @@ export default function TransactionsView({
                   placeholder="Additional context or receipt info"
                   value={formNotes}
                   onChange={(e) => setFormNotes(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -596,14 +595,14 @@ export default function TransactionsView({
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold transition-all"
+                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-md shadow-indigo-600/30 transition-all disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-md shadow-indigo-600/30 transition-all disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : editingTx ? 'Update Entry' : 'Record Transaction'}
                 </button>

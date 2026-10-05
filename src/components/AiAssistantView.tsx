@@ -4,13 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Sparkles, 
   Send, 
-  Key, 
   ShieldCheck, 
   Lock, 
   ChevronDown, 
   ChevronUp, 
   Cpu, 
-  CheckCircle2, 
   X, 
   Bot, 
   User as UserIcon,
@@ -188,19 +186,19 @@ export default function AiAssistantView({
   ];
 
   return (
-    <div className="h-[calc(100vh-10rem)] flex flex-col glass-panel rounded-2xl overflow-hidden">
+    <div className="h-[calc(100vh-10rem)] flex flex-col border border-slate-800 bg-slate-900/90 rounded-xl overflow-hidden shadow-sm">
       {/* Header bar */}
-      <div className="p-4 border-b border-white/10 bg-white/[0.02] flex items-center justify-between">
+      <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-emerald-400 p-[1px]">
-            <div className="w-full h-full bg-[#090D16] rounded-xl flex items-center justify-center">
+            <div className="w-full h-full bg-slate-900 rounded-xl flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-emerald-400" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-sm text-white">FinTrack AI Assistant</h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-semibold">
                 {userHasKey ? `Live (${userProvider})` : 'Offline Mock Fallback'}
               </span>
             </div>
@@ -212,7 +210,7 @@ export default function AiAssistantView({
 
         <button
           onClick={() => setKeyModalOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-all"
         >
           <Lock className="w-3.5 h-3.5 text-amber-400" />
           <span>{userHasKey ? 'Key Vault (Encrypted)' : 'Configure AI Key'}</span>
@@ -238,7 +236,7 @@ export default function AiAssistantView({
                 <button
                   key={pill.label}
                   onClick={() => handleSend(pill.prompt)}
-                  className="p-2.5 rounded-xl bg-white/5 hover:bg-indigo-600/20 border border-white/5 hover:border-indigo-500/30 text-left text-xs text-slate-300 hover:text-white transition-all"
+                  className="p-2.5 rounded-lg bg-slate-950 hover:bg-indigo-600/20 border border-slate-800 hover:border-indigo-500/30 text-left text-xs text-slate-300 hover:text-white transition-all"
                 >
                   {pill.label}
                 </button>
@@ -256,7 +254,7 @@ export default function AiAssistantView({
                 className={`flex gap-3 max-w-3xl ${isUser ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
               >
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                     isUser ? 'bg-indigo-600 text-white' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                   }`}
                 >
@@ -265,10 +263,10 @@ export default function AiAssistantView({
 
                 <div className="space-y-2">
                   <div
-                    className={`p-4 rounded-2xl text-xs leading-relaxed ${
+                    className={`p-4 rounded-xl text-xs leading-relaxed ${
                       isUser
                         ? 'bg-indigo-600 text-white rounded-tr-none'
-                        : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-none prose prose-invert'
+                        : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-tl-none'
                     }`}
                   >
                     <div className="whitespace-pre-wrap font-sans">{msg.content}</div>
@@ -276,10 +274,10 @@ export default function AiAssistantView({
 
                   {/* Tool Call Inspector Accordion */}
                   {!isUser && msg.toolCalls && msg.toolCalls.length > 0 && (
-                    <div className="bg-black/30 border border-white/5 rounded-xl overflow-hidden text-[11px]">
+                    <div className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden text-[11px]">
                       <button
                         onClick={() => setExpandedToolMsgId(isToolExpanded ? null : msg.id)}
-                        className="w-full px-3 py-2 flex items-center justify-between text-slate-400 hover:text-slate-200 bg-white/[0.02]"
+                        className="w-full px-3 py-2 flex items-center justify-between text-slate-400 hover:text-slate-200 bg-slate-900/50"
                       >
                         <span className="flex items-center gap-1.5 font-mono text-emerald-400">
                           <ShieldCheck className="w-3.5 h-3.5" />
@@ -289,9 +287,9 @@ export default function AiAssistantView({
                       </button>
 
                       {isToolExpanded && (
-                        <div className="p-3 border-t border-white/5 space-y-2 font-mono text-[10px] text-slate-300 max-h-48 overflow-y-auto">
+                        <div className="p-3 border-t border-slate-800 space-y-2 font-mono text-[10px] text-slate-300 max-h-48 overflow-y-auto">
                           {msg.toolCalls.map((tc, idx) => (
-                            <div key={idx} className="p-2 rounded bg-black/40 border border-white/5">
+                            <div key={idx} className="p-2 rounded bg-slate-900 border border-slate-800">
                               <div className="text-indigo-400 font-bold">tool: {tc.toolName}()</div>
                               <pre className="mt-1 text-slate-400 overflow-x-auto">
                                 {JSON.stringify(tc.output, null, 2)}
@@ -310,10 +308,10 @@ export default function AiAssistantView({
 
         {loading && (
           <div className="flex gap-3 max-w-xl mr-auto">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center animate-pulse">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center animate-pulse">
               <Bot className="w-4 h-4" />
             </div>
-            <div className="p-4 rounded-2xl rounded-tl-none bg-white/5 border border-white/10 text-xs text-slate-400 flex items-center gap-2">
+            <div className="p-4 rounded-xl rounded-tl-none bg-slate-950 border border-slate-800 text-xs text-slate-400 flex items-center gap-2">
               <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
               <span>Analyzing authenticated financial records...</span>
             </div>
@@ -324,14 +322,14 @@ export default function AiAssistantView({
       </div>
 
       {/* Quick Prompts Bar & Input Box */}
-      <div className="p-4 border-t border-white/10 bg-[#090D16]/70 backdrop-blur-md space-y-3">
+      <div className="p-4 border-t border-slate-800 bg-slate-950 space-y-3">
         {/* Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
           {quickPills.map((pill) => (
             <button
               key={pill.label}
               onClick={() => handleSend(pill.prompt)}
-              className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-indigo-500/30 text-slate-300 hover:text-white shrink-0 transition-all text-[11px]"
+              className="px-3 py-1 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/30 text-slate-300 hover:text-white shrink-0 transition-all text-[11px]"
             >
               {pill.label}
             </button>
@@ -352,12 +350,12 @@ export default function AiAssistantView({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+            className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all disabled:opacity-40 flex items-center gap-1.5"
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all disabled:opacity-40 flex items-center gap-1.5"
           >
             <span>Send</span>
             <Send className="w-3.5 h-3.5" />
@@ -367,9 +365,9 @@ export default function AiAssistantView({
 
       {/* Key Vault Modal */}
       {keyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="glass-panel w-full max-w-md p-6 rounded-2xl border border-white/10 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-emerald-400" />
                 <h3 className="font-bold text-sm text-white">AI Key Vault (AES-256-GCM)</h3>
@@ -382,7 +380,7 @@ export default function AiAssistantView({
               </button>
             </div>
 
-            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-300 space-y-1">
+            <div className="p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[11px] text-indigo-300 space-y-1">
               <div className="font-semibold flex items-center gap-1 text-white">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Zero Plaintext Exposure Guarantee</span>
@@ -393,7 +391,7 @@ export default function AiAssistantView({
             </div>
 
             {keyStatusMsg && (
-              <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-emerald-400">
+              <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-400">
                 {keyStatusMsg}
               </div>
             )}
@@ -404,7 +402,7 @@ export default function AiAssistantView({
                 <select
                   value={selectedProvider}
                   onChange={(e) => setSelectedProvider(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
                 >
                   <option value="openai" className="bg-slate-900 text-white">OpenAI (GPT-4o / GPT-4o-mini)</option>
                   <option value="anthropic" className="bg-slate-900 text-white">Anthropic (Claude 3.5 Sonnet)</option>
@@ -420,7 +418,7 @@ export default function AiAssistantView({
                   placeholder="sk-... or API key token"
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -439,14 +437,14 @@ export default function AiAssistantView({
                   <button
                     type="button"
                     onClick={() => setKeyModalOpen(false)}
-                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-semibold"
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
                   >
                     Close
                   </button>
                   <button
                     type="submit"
                     disabled={keySaving}
-                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md disabled:opacity-50"
+                    className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md disabled:opacity-50"
                   >
                     {keySaving ? 'Encrypting...' : 'Encrypt & Store'}
                   </button>

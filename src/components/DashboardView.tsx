@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   XCircle,
   FileSpreadsheet,
-  FileJson
+  FileJson,
+  Calendar
 } from 'lucide-react';
 import { formatCents } from '@/lib/money';
 
@@ -68,17 +69,25 @@ export default function DashboardView({
   onOpenAddTx,
   onNavigateTab,
 }: DashboardViewProps) {
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+
   if (loading || !data) {
     return (
       <div className="space-y-6 animate-pulse">
+        <div className="h-20 bg-slate-900 border border-slate-800 rounded-xl" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 rounded-2xl bg-white/[0.03] border border-white/5" />
+            <div key={i} className="h-32 rounded-xl bg-slate-900 border border-slate-800" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-72 rounded-2xl bg-white/[0.03] border border-white/5" />
-          <div className="h-72 rounded-2xl bg-white/[0.03] border border-white/5" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-7 h-72 rounded-xl bg-slate-900 border border-slate-800" />
+          <div className="lg:col-span-5 h-72 rounded-xl bg-slate-900 border border-slate-800" />
         </div>
       </div>
     );
@@ -92,141 +101,151 @@ export default function DashboardView({
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Quick Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-indigo-950/40 via-slate-900/40 to-slate-950/40 p-5 rounded-2xl border border-indigo-500/20 backdrop-blur-md">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
             <span>Financial Overview</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-              Live Minor Units
-            </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Real-time ledger with zero float drift and cryptographically hash-chained audit trails.
+          <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+            <span>{currentDate}</span>
+            <span>&bull;</span>
+            <span className="text-emerald-400 font-mono">Zero Float Drift Active</span>
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Right-Aligned Actions */}
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => downloadExport('csv')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 hover:text-white transition-all"
             title="Download verified user transactions as CSV"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-            <span>CSV</span>
+            <span>Export CSV</span>
           </button>
 
           <button
             onClick={() => downloadExport('json')}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-medium text-slate-300 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 hover:text-white transition-all"
             title="Download complete JSON export"
           >
             <FileJson className="w-3.5 h-3.5 text-indigo-400" />
-            <span>JSON</span>
+            <span>Export JSON</span>
           </button>
 
           <button
             onClick={() => onNavigateTab('ai')}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 hover:text-indigo-200 text-xs font-semibold transition-all"
           >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>AI Advice</span>
           </button>
 
           <button
             onClick={onOpenAddTx}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/30 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Transaction</span>
+            <span>+ Add Transaction</span>
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* Top Metric Grid (4 Cards in a single row) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Net Balance */}
-        <div className="glass-panel p-5 rounded-2xl glass-panel-hover">
+        {/* 1. Net Balance */}
+        <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Total Net Balance</span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+            <span className="text-xs font-medium text-slate-400">Net Balance</span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <div className={`text-2xl font-bold font-mono tracking-tight ${kpis.totalBalance >= 0 ? 'text-white' : 'text-rose-400'}`}>
               {formatCents(kpis.totalBalance)}
             </div>
             <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-              <span>{kpis.transactionCount} transactions recorded</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+              <span>{kpis.transactionCount} ledger entries</span>
             </div>
           </div>
         </div>
 
-        {/* Total Income */}
-        <div className="glass-panel p-5 rounded-2xl glass-panel-hover">
+        {/* 2. Total Income */}
+        <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Total Inflow</span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-              <TrendingUp className="w-4 h-4" />
+            <span className="text-xs font-medium text-slate-400">Total Income</span>
+            <div className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 font-semibold">
+              INFLOW
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <div className="text-2xl font-bold font-mono tracking-tight text-emerald-400">
               +{formatCents(kpis.totalIncome)}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
-              Recorded income streams
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Verified income streams</span>
             </div>
           </div>
         </div>
 
-        {/* Total Expenses */}
-        <div className="glass-panel p-5 rounded-2xl glass-panel-hover">
+        {/* 3. Total Expenses */}
+        <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Total Outflow</span>
-            <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400">
-              <TrendingDown className="w-4 h-4" />
+            <span className="text-xs font-medium text-slate-400">Total Expenses</span>
+            <div className="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-mono text-rose-400 font-semibold">
+              OUTFLOW
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <div className="text-2xl font-bold font-mono tracking-tight text-rose-400">
               -{formatCents(kpis.totalExpense)}
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
-              Cumulative expenditure
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+              <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+              <span>Cumulative expenditure</span>
             </div>
           </div>
         </div>
 
-        {/* Savings Rate */}
-        <div className="glass-panel p-5 rounded-2xl glass-panel-hover">
+        {/* 4. Savings Rate */}
+        <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm hover:border-slate-700 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Savings Rate</span>
-            <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-400">
+            <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
               <PiggyBank className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-4">
             <div className="text-2xl font-bold font-mono tracking-tight text-violet-300">
               {kpis.savingsRate}%
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">
-              {kpis.savingsRate >= 20 ? '✅ Above 20% target' : '⚠️ Below 20% target'}
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+              <span>{kpis.savingsRate >= 20 ? 'Target achieved (≥20%)' : 'Needs attention (<20%)'}</span>
+            </div>
+            <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+              <div 
+                style={{ width: `${Math.min(kpis.savingsRate, 100)}%` }} 
+                className={`h-full rounded-full ${kpis.savingsRate >= 20 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Charts & Analytics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cash Flow Trends */}
-        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl flex flex-col justify-between">
+      {/* Middle Section (2 Columns: 60% Left, 40% Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column (60%): Interactive Cash-Flow / Monthly Trends */}
+        <div className="lg:col-span-7 border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-semibold text-sm text-slate-200">Cash Flow Trends</h3>
-                <p className="text-xs text-slate-400">Monthly Income vs Expenditure comparison</p>
+                <p className="text-xs text-slate-400">Monthly Inflow vs Outflow analysis</p>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <div className="flex items-center gap-1.5">
@@ -240,11 +259,11 @@ export default function DashboardView({
               </div>
             </div>
 
-            {/* Visual Bar Graph */}
+            {/* Visual Bars */}
             <div className="mt-6 space-y-4">
               {monthlyTrends.length === 0 ? (
-                <div className="h-44 flex items-center justify-center text-xs text-slate-500">
-                  No monthly trend records yet.
+                <div className="h-44 flex items-center justify-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-lg">
+                  No monthly trend records available yet.
                 </div>
               ) : (
                 monthlyTrends.map((trend) => {
@@ -253,7 +272,7 @@ export default function DashboardView({
                   const expensePct = Math.round((trend.expense / maxVal) * 100);
 
                   return (
-                    <div key={trend.month} className="space-y-1">
+                    <div key={trend.month} className="space-y-1.5">
                       <div className="flex justify-between text-xs font-mono">
                         <span className="text-slate-300 font-semibold">{trend.month}</span>
                         <div className="flex gap-4">
@@ -261,18 +280,18 @@ export default function DashboardView({
                           <span className="text-rose-400">-{formatCents(trend.expense)}</span>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 h-4 bg-white/[0.02] rounded-full p-0.5">
+                      <div className="grid grid-cols-2 gap-2 h-4 bg-slate-800/80 rounded-md p-0.5">
                         <div className="w-full flex justify-end">
                           <div
                             style={{ width: `${incomePct}%` }}
-                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                            className="h-full bg-emerald-500 rounded transition-all duration-500"
                             title={`Income: ${formatCents(trend.income)}`}
                           />
                         </div>
                         <div className="w-full flex justify-start">
                           <div
                             style={{ width: `${expensePct}%` }}
-                            className="h-full bg-rose-500 rounded-full transition-all duration-500"
+                            className="h-full bg-rose-500 rounded transition-all duration-500"
                             title={`Expense: ${formatCents(trend.expense)}`}
                           />
                         </div>
@@ -284,110 +303,129 @@ export default function DashboardView({
             </div>
           </div>
 
-          {/* Overall Monthly Budget Widget */}
-          <div className="mt-6 pt-5 border-t border-white/5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-slate-300 flex items-center gap-1.5">
-                <span>Monthly Budget Cap</span>
-                {overallBudget.status === 'Exceeded' && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30">
-                    EXCEEDED
-                  </span>
-                )}
-                {overallBudget.status === 'Warning' && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-bold border border-amber-500/30">
-                    WARNING
-                  </span>
-                )}
-                {overallBudget.status === 'Healthy' && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                    HEALTHY
-                  </span>
-                )}
-              </span>
-              <span className="font-mono text-slate-400">
-                {overallBudget.limit > 0
-                  ? `${formatCents(overallBudget.spent)} / ${formatCents(overallBudget.limit)} (${overallBudget.percentage}%)`
-                  : 'No limit set'}
-              </span>
-            </div>
-
-            <div className="w-full bg-white/5 h-2 rounded-full mt-2 overflow-hidden">
-              <div
-                style={{ width: `${Math.min(overallBudget.percentage, 100)}%` }}
-                className={`h-full rounded-full transition-all duration-500 ${
-                  overallBudget.status === 'Exceeded'
-                    ? 'bg-rose-500'
-                    : overallBudget.status === 'Warning'
-                    ? 'bg-amber-500'
-                    : 'bg-emerald-500'
-                }`}
-              />
+          {/* Expense Breakdown Category Bars */}
+          <div className="mt-6 pt-5 border-t border-slate-800">
+            <h4 className="text-xs font-semibold text-slate-300 mb-3">Top Category Allocations</h4>
+            <div className="space-y-2.5">
+              {categorySpending.slice(0, 3).map((cat) => {
+                const pct = kpis.totalExpense > 0 ? Math.round((cat.total_amount / kpis.totalExpense) * 100) : 0;
+                return (
+                  <div key={cat.id} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-300">{cat.name}</span>
+                      <span className="font-mono text-slate-400">{formatCents(cat.total_amount)} ({pct}%)</span>
+                    </div>
+                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        style={{ width: `${pct}%`, backgroundColor: cat.color || '#6366F1' }}
+                        className="h-full rounded-full transition-all duration-500"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Category Spending Breakdown */}
-        <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+        {/* Right Column (40%): Budget Status & Alerts */}
+        <div className="lg:col-span-5 border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-slate-200">Expense Breakdown</h3>
-              <span className="text-xs text-slate-400 font-mono">
-                {categorySpending.length} Categories
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm text-slate-200">Budget Status & Alerts</h3>
+              <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
+                overallBudget.status === 'Exceeded'
+                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                  : overallBudget.status === 'Warning'
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                  : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+              }`}>
+                {overallBudget.status.toUpperCase()}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">Top expenditure allocations</p>
 
-            <div className="mt-5 space-y-3.5">
-              {categorySpending.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-500">
-                  No expense records found.
-                </div>
+            {/* Alert banner */}
+            <div className={`p-3.5 rounded-lg border text-xs mb-5 flex items-start gap-2.5 ${
+              overallBudget.status === 'Exceeded'
+                ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                : overallBudget.status === 'Warning'
+                ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+            }`}>
+              {overallBudget.status === 'Exceeded' ? (
+                <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              ) : overallBudget.status === 'Warning' ? (
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               ) : (
-                categorySpending.slice(0, 5).map((cat) => {
-                  const pct = kpis.totalExpense > 0 ? Math.round((cat.total_amount / kpis.totalExpense) * 100) : 0;
-                  return (
-                    <div key={cat.id} className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: cat.color || '#3B82F6' }}
-                          />
-                          <span className="text-slate-200 font-medium">{cat.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2 font-mono">
-                          <span className="text-slate-200">{formatCents(cat.total_amount)}</span>
-                          <span className="text-[10px] text-slate-400 w-8 text-right">{pct}%</span>
-                        </div>
-                      </div>
-                      <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                        <div
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor: cat.color || '#3B82F6',
-                          }}
-                          className="h-full rounded-full transition-all duration-500"
-                        />
-                      </div>
-                    </div>
-                  );
-                })
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               )}
+              <div>
+                <span className="font-semibold">
+                  {overallBudget.status === 'Exceeded'
+                    ? 'Budget Exceeded!'
+                    : overallBudget.status === 'Warning'
+                    ? 'Approaching Limit'
+                    : 'Spending Under Control'}
+                </span>
+                <p className="text-[11px] opacity-80 mt-0.5">
+                  {overallBudget.status === 'Exceeded'
+                    ? `Expenditure has exceeded target cap by ${formatCents(Math.abs(overallBudget.remainingCents))}.`
+                    : overallBudget.status === 'Warning'
+                    ? `You have consumed ${overallBudget.percentage}% of your planned monthly budget cap.`
+                    : `You have ${formatCents(overallBudget.remainingCents)} left within your healthy spending ceiling.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Main Progress Indicator */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-end text-xs">
+                <div>
+                  <span className="text-slate-400 block text-[11px]">Spent vs Allocated</span>
+                  <span className="text-base font-bold font-mono text-white">
+                    {formatCents(overallBudget.spent)}
+                  </span>
+                  <span className="text-xs font-mono text-slate-400 ml-1">
+                    / {formatCents(overallBudget.limit)}
+                  </span>
+                </div>
+                <span className="font-mono font-bold text-sm text-slate-200">
+                  {overallBudget.percentage}%
+                </span>
+              </div>
+
+              <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden p-0.5">
+                <div
+                  style={{ width: `${Math.min(overallBudget.percentage, 100)}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    overallBudget.status === 'Exceeded'
+                      ? 'bg-rose-500'
+                      : overallBudget.status === 'Warning'
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
+                  }`}
+                />
+              </div>
+
+              <div className="flex justify-between text-[11px] text-slate-400 font-mono pt-1">
+                <span>0%</span>
+                <span>80% (Warning)</span>
+                <span>100% (Cap)</span>
+              </div>
             </div>
           </div>
 
           <button
             onClick={() => onNavigateTab('budgets')}
-            className="w-full mt-6 py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition-all text-center"
+            className="w-full mt-6 py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-all text-center"
           >
-            Configure Budgets & Limits &rarr;
+            Manage Category Budgets &rarr;
           </button>
         </div>
       </div>
 
-      {/* Recent Transactions List */}
-      <div className="glass-panel p-6 rounded-2xl">
+      {/* Bottom Section: Recent Ledger Transactions Table */}
+      <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold text-sm text-slate-200">Recent Transactions</h3>
@@ -401,7 +439,7 @@ export default function DashboardView({
           </button>
         </div>
 
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-slate-800">
           {recentTransactions.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-500">
               No transactions recorded yet. Click &quot;Add Transaction&quot; to begin!
@@ -411,7 +449,7 @@ export default function DashboardView({
               <div key={tx.id} className="py-3 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs"
+                    className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs"
                     style={{
                       backgroundColor: `${tx.category_color || '#6366F1'}20`,
                       color: tx.category_color || '#818CF8',

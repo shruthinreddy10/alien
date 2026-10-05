@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Navbar from '@/components/Navbar';
+import Sidebar from '@/components/Sidebar';
 import DashboardView from '@/components/DashboardView';
 import TransactionsView from '@/components/TransactionsView';
 import BudgetsView from '@/components/BudgetsView';
@@ -13,9 +13,7 @@ import {
   Lock, 
   Sparkles, 
   Database, 
-  CheckCircle2, 
   ArrowRight,
-  TrendingUp,
   Cpu
 } from 'lucide-react';
 
@@ -111,8 +109,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#090D16]">
-      <Navbar
+    <div className="min-h-screen flex bg-slate-950 text-slate-100">
+      {/* 2-Column App Shell: Sidebar Navigation (Left) */}
+      <Sidebar
         currentTab={currentTab}
         onTabChange={setCurrentTab}
         user={user}
@@ -120,118 +119,117 @@ export default function HomePage() {
         onOpenAuth={() => setAuthModalOpen(true)}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {user ? (
-          <div>
-            {currentTab === 'dashboard' && (
-              <DashboardView
-                data={dashboardData}
-                loading={!dashboardData}
-                onOpenAddTx={() => setAddTxModalOpen(true)}
-                onNavigateTab={setCurrentTab}
-              />
-            )}
+      {/* Main Dashboard Area (Right) */}
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
+        <main className="flex-1 p-8 overflow-y-auto">
+          {user ? (
+            <div className="max-w-7xl mx-auto w-full">
+              {currentTab === 'dashboard' && (
+                <DashboardView
+                  data={dashboardData}
+                  loading={!dashboardData}
+                  onOpenAddTx={() => setAddTxModalOpen(true)}
+                  onNavigateTab={setCurrentTab}
+                />
+              )}
 
-            {currentTab === 'transactions' && (
-              <TransactionsView
-                categories={categories}
-                onRefreshDashboard={loadUserData}
-                openAddModal={addTxModalOpen}
-                onCloseAddModal={() => setAddTxModalOpen(false)}
-              />
-            )}
+              {currentTab === 'transactions' && (
+                <TransactionsView
+                  categories={categories}
+                  onRefreshDashboard={loadUserData}
+                  openAddModal={addTxModalOpen}
+                  onCloseAddModal={() => setAddTxModalOpen(false)}
+                />
+              )}
 
-            {currentTab === 'budgets' && (
-              <BudgetsView
-                budgets={budgets}
-                categories={categories}
-                loading={false}
-                onRefresh={loadUserData}
-              />
-            )}
+              {currentTab === 'budgets' && (
+                <BudgetsView
+                  budgets={budgets}
+                  categories={categories}
+                  loading={false}
+                  onRefresh={loadUserData}
+                />
+              )}
 
-            {currentTab === 'ai' && (
-              <AiAssistantView
-                userHasKey={!!user.hasApiKey}
-                userProvider={user.aiProvider || 'mock'}
-                onRefreshUser={checkSession}
-              />
-            )}
+              {currentTab === 'ai' && (
+                <AiAssistantView
+                  userHasKey={!!user.hasApiKey}
+                  userProvider={user.aiProvider || 'mock'}
+                  onRefreshUser={checkSession}
+                />
+              )}
 
-            {currentTab === 'audit' && (
-              <AuditLogsView isAdmin={user.role === 'ADMIN'} />
-            )}
-          </div>
-        ) : (
-          /* Unauthenticated Landing / Demo Entry */
-          <div className="py-12 sm:py-20 space-y-16">
-            <div className="text-center max-w-3xl mx-auto space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Build Secure 24 Hackathon Prototype</span>
+              {currentTab === 'audit' && (
+                <AuditLogsView isAdmin={user.role === 'ADMIN'} />
+              )}
+            </div>
+          ) : (
+            /* Unauthenticated State in Main Area */
+            <div className="max-w-4xl mx-auto py-16 space-y-12">
+              <div className="text-center space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+                  <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Build Secure 24 Hackathon Prototype</span>
+                </div>
+
+                <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
+                  Enterprise Personal Finance & <br />
+                  <span className="text-indigo-400">
+                    Tamper-Evident Security
+                  </span>
+                </h1>
+
+                <p className="text-slate-400 text-sm max-w-xl mx-auto leading-relaxed">
+                  FinTrack stores all currency as exact integer minor units, eliminates IDOR through strict row-level authorization, and encrypts API keys at rest with AES-256-GCM.
+                </p>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => setAuthModalOpen(true)}
+                    className="px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition-all inline-flex items-center gap-2"
+                  >
+                    <span>Sign In to Demo Workspace</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
-              <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
-                Enterprise Finance with <br />
-                <span className="bg-gradient-to-r from-emerald-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">
-                  Zero Float Drift & Private AI
-                </span>
-              </h1>
+              {/* Security Architecture Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 space-y-2.5">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-sm text-white">Integer Minor Units</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Eliminates IEEE-754 floating point drift by storing currency in exact integer cents/paise across all ledgers.
+                  </p>
+                </div>
 
-              <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-                FinTrack stores all currency as exact integer minor units, eliminates IDOR through strict row-level authorization, encrypts API keys at rest with AES-256-GCM, and maintains a cryptographic SHA-256 hash-chained audit ledger.
-              </p>
+                <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 space-y-2.5">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-sm text-white">AES-256-GCM Vault</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Envelope encryption for user-supplied provider keys with authenticated tags. Never returned in plaintext.
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 transition-all flex items-center gap-2"
-                >
-                  <span>Launch Demo Workspace</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 space-y-2.5">
+                  <div className="w-10 h-10 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+                    <Cpu className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-bold text-sm text-white">Private AI Assistant</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Tool-calling over authenticated user data with offline fallback when no external LLM key is configured.
+                  </p>
+                </div>
               </div>
             </div>
-
-            {/* Feature Highlights Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              <div className="glass-panel p-6 rounded-3xl space-y-3 glass-panel-hover">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                  <Database className="w-5 h-5" />
-                </div>
-                <h2 className="font-bold text-base text-white">Integer Minor Units</h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Eliminates IEEE-754 floating point drift by storing currency in exact integer cents/paise across all ledgers.
-                </p>
-              </div>
-
-              <div className="glass-panel p-6 rounded-3xl space-y-3 glass-panel-hover">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <h2 className="font-bold text-base text-white">AES-256-GCM Key Vault</h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Envelope encryption for user-supplied OpenAI, Anthropic, or Gemini keys with authenticated tags. Never returned in plaintext.
-                </p>
-              </div>
-
-              <div className="glass-panel p-6 rounded-3xl space-y-3 glass-panel-hover">
-                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400">
-                  <Cpu className="w-5 h-5" />
-                </div>
-                <h2 className="font-bold text-base text-white">Private AI Assistant</h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Autonomous tool-calling over authenticated user data with intelligent offline mock fallback when offline.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      <footer className="border-t border-white/5 py-6 text-center text-xs text-slate-500">
-        <p>FinTrack &bull; Build Secure 24 &bull; Team SleetAce Squad (ID: 76) &bull; Abhedya VBIT Cybersecurity Forum</p>
-      </footer>
+          )}
+        </main>
+      </div>
 
       <AuthModal
         isOpen={authModalOpen}
