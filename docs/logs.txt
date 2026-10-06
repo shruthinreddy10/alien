@@ -572,3 +572,185 @@ Files Modified / Created:
 
 Actions Taken:
 * Started `npm run dev` as a daemon task
+
+================================================================================
+[2026-10-06T10:31:10+05:30] Feature Addition — Anomaly Detection & Category Deletion
+================================================================================
+User Prompt (verbatim):
+=====================================================================
+13. FEATURE ADDITION — Anomaly Detection + Category Deletion
+=====================================================================
+
+--- 13.1 ANOMALY DETECTION ---
+
+DATA MODEL (forward-only migration):
+  AnomalyAlert:
+    id, user_id, transaction_id, rule, severity (0.0-1.0),
+    level (LOW|MEDIUM|HIGH), title, description,
+    metadata (json), acknowledged_at, dismissed_at, created_at
+
+DETECTION RULES (run after every transaction insert + nightly scan):
+  1. amount_outlier         : amount > 3x category avg (last 90d)
+  2. first_merchant_high    : new merchant + amount > 2x monthly median
+  3. duplicate_charge       : same merchant + same amount within 24h
+  4. unusual_time           : transaction at 2-5 AM when user's normal
+                              window is 9 AM - 9 PM
+  5. category_spike         : this week's category total > 200% of
+                              last 4-week average
+  6. login_location_anomaly : login from new country followed by
+                              transaction > 5x median (Phase 2)
+
+SEVERITY:
+  severity = min(1.0, (amount / category_avg) / 5)
+  level    = LOW if <0.4, MEDIUM if <0.7, HIGH otherwise
+
+UI:
+  - Dashboard card "Flagged Transactions" (top 3, unacknowledged)
+  - /alerts page: full list with filters (severity, rule, date, status)
+  - Inline ⚠️ badge on flagged transactions in ledger
+  - Actions: Acknowledge, Mark as normal, View txn,
+             Create budget for this category
+
+BACKGROUND JOB:
+  - on_transaction_insert: quick check (rules 1, 3, 4)
+  - nightly: full scan of last 30 days (all rules)
+  - weekly: recompute category averages
+
+AI TOOL:
+  getAnomalies(dateRange, severity) -> returns flagged list
+  AI can answer: "Show unusual transactions", "Why was this flagged?"
+
+AUDIT:
+  Log anomaly.created, anomaly.acknowledged, anomaly.dismissed
+
+SEED DATA:
+  2 anomalies for user@demo.com:
+    - ₹1,200 Starbucks (3x food avg)
+    - Netflix charged twice on same day
+
+--- 13.2 CATEGORY DELETION ---
+
+BEHAVIOR:
+  - System categories: cannot be deleted (is_system = true)
+  - User categories with 0 transactions: instant delete
+  - User categories with transactions: require reassignment choice
+  - Categories with active budget: extra warning
+
+DELETE FLOW:
+  1. User clicks delete icon on a category row
+  2. System counts transactions using this category
+  3. If count > 0: open modal with 3 options:
+       a) Reassign to another category (picker)
+       b) Move to "Uncategorized" (system default)
+       c) Delete transactions too (soft-delete, 24h grace)
+  4. If category has active budget: additional warning + option
+     to delete budget too
+  5. Execute chosen action in a transaction:
+       - Reassign: UPDATE transactions SET category_id = new
+       - Uncategorized: UPDATE ... SET category_id = uncategorized_id
+       - Delete: soft-delete transactions, then delete category
+  6. Audit log: category.delete with metadata
+       { reassigned_to, transaction_count, budget_deleted }
+  7. Toast: "Coffee deleted. 42 transactions reassigned to
+     Food & Dining." + Undo button (30s window)
+
+UI:
+  Settings -> Categories page:
+    - Two sections: "System Categories" (read-only)
+                    "Your Categories" (with edit/delete icons)
+    - Each user category row shows transaction count
+    - Delete icon opens the reassignment modal
+    - Edit opens the same form as create (name, icon, color, parent)
+
+DELETE MODAL:
+  - Title: "Delete 'Coffee'"
+  - Warning: "42 transactions use this category."
+  - Radio options:
+      ( ) Reassign to another category  [picker ▾]
+      ( ) Move to "Uncategorized"
+      ( ) Delete transactions too (permanent, 24h grace)
+  - If category has budget:
+      Warning: "This category has a budget of ₹5,000/month."
+      Checkbox: [ ] Also delete this budget
+  - Buttons: [Cancel] [Delete Category] (destructive red)
+
+BACKEND ENDPOINTS:
+  DELETE /api/v1/categories/:id
+    body: { action: "reassign" | "uncategorized" | "delete_all",
+            reassign_to?: category_id,
+            delete_budget?: bool }
+    response: { deleted: true, reassigned_count: 42,
+                deleted_count: 0, budget_deleted: false }
+    audit: category.delete
+
+UNDO:
+  POST /api/v1/categories/:id/undo  (within 30s window)
+    Restores category + reassigns back
+
+SEED DATA:
+  For user@demo.com, create 3 custom categories:
+    - Coffee (12 transactions)
+    - Pet Care (0 transactions)
+    - Gaming (28 transactions, with active budget)
+
+--- 13.3 ACCEPTANCE CHECKLIST ---
+  [ ] Anomaly detected on seeded Starbucks transaction
+  [ ] Netflix duplicate flagged
+  [ ] Dashboard "Flagged Transactions" card shows top 3
+  [ ] /alerts page filters work (severity, rule, date)
+  [ ] "Mark as normal" dismisses and audit-logs
+  [ ] AI answers "Show unusual transactions this month"
+  [ ] Category delete with 0 txns works instantly
+  [ ] Category delete with txns opens reassignment modal
+  [ ] Reassign flow moves all transactions correctly
+  [ ] Uncategorized flow works
+  [ ] Delete-all flow soft-deletes with 24h grace
+  [ ] Budget warning appears when category has budget
+  [ ] Undo within 30s restores category + transactions
+  [ ] System categories cannot be deleted
+  [ ] Every delete writes to audit log
+  [ ] IDOR: user cannot delete another user's category (403)
+
+Acknowledge and implement.
+
+Agent Response:
+Implemented Feature 13: Anomaly Detection Engine and Category Deletion with 30s Undo Window according to the full technical specification. Built the detection engine (src/lib/anomaly-detector.ts) with all 6 rules, numeric severity scoring, instant checks on transaction insertion, and tamper-evident audit logging (anomaly.created, anomaly.acknowledged, anomaly.dismissed). Created the /alerts dashboard view, Dashboard "Flagged Transactions" card, and inline ledger badges. Built the Category Deletion and 3-way reassignment modal, soft-delete transaction handling, 30-second undo session cache (/api/v1/categories/:id/undo), and system category protection. Seeded 3 custom categories (Coffee, Pet Care, Gaming) and 2 unacknowledged anomalies for user@demo.com. All 8 unit/integration tests and the Turbopack Next.js production build pass cleanly with 0 errors.
+
+Agent Response Summary:
+Completed feature 13 end-to-end: Anomaly Alerting data model, severity scoring, background hooks, AI tool getAnomalies, Settings category deletion modal with 30s undo window, and test suite. Verified with full seed, build, and automated test execution.
+
+Commit SHA:
+b871ffc984c69f2c8f3156d09fea5e57b5c35173
+
+Files Modified / Created:
+* src/lib/anomaly-detector.ts (Created)
+* src/app/api/alerts/route.ts (Modified)
+* src/app/api/categories/[id]/route.ts (Created)
+* src/app/api/categories/[id]/undo/route.ts (Created)
+* src/app/api/v1/categories/[id]/route.ts (Created)
+* src/app/api/v1/categories/[id]/undo/route.ts (Created)
+* src/app/api/categories/route.ts (Modified)
+* src/app/api/dashboard/route.ts (Modified)
+* src/app/api/transactions/route.ts (Modified)
+* src/components/AlertsView.tsx (Modified)
+* src/components/DashboardView.tsx (Modified)
+* src/components/SettingsViews.tsx (Modified)
+* src/components/TransactionsView.tsx (Modified)
+* src/lib/ai-assistant.ts (Modified)
+* src/lib/db.ts (Modified)
+* scripts/seed.mjs (Modified)
+* docs/APPROACH.md (Modified)
+* tests/anomaly-categories.test.mjs (Created)
+* tests/security.test.mjs (Modified)
+
+Actions Taken:
+* Created src/lib/anomaly-detector.ts with all 6 rules and severity formula min(1.0, (amount / category_avg) / 5)
+* Created /api/v1/categories/[id] and /api/v1/categories/[id]/undo with category_undo_sessions table
+* Added system category immutability check and strict IDOR 403 authorization
+* Added getAnomalies AI tool to src/lib/ai-assistant.ts
+* Added Flagged Transactions card to DashboardView and inline warning badges to TransactionsView
+* Added Reassignment modal, 30s undo toast, and categories split to SettingsViews
+* Added seed data for Coffee (12 txns), Pet Care (0 txns), Gaming (28 txns + ₹5,000 budget), and 2 seeded alerts
+* Added tests in tests/anomaly-categories.test.mjs and verified all 8 tests pass
+* Verified Next.js Turbopack production build compiles with zero errors
+* Committed changes under git commit b871ffc
