@@ -286,7 +286,7 @@ export default function PaymentSimulatorView({ onNavigateTab }: { onNavigateTab?
                             {c.brand} •••• {c.last4} ({c.nickname})
                           </div>
                           <div className="text-[10px] text-slate-500 font-mono">
-                            Expires {String(c.expiry_month).padStart(2, '0')}/{String(c.expiry_year).slice(-2)} · Token: {c.token.slice(0, 16)}...
+                            Expires {String(c.expiry_month).padStart(2, '0')}/{String(c.expiry_year).slice(-2)} {c.token ? `· Token: ${c.token.slice(0, 16)}...` : ''}
                           </div>
                         </div>
                       </div>

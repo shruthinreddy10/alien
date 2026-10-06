@@ -103,14 +103,23 @@ export default function DashboardView({
     );
   }
 
-  const { kpis, categorySpending, recentTransactions, monthlyTrends, overallBudget, flaggedTransactions } = data;
+  const { 
+    kpis = { totalBalance: 0, totalIncome: 0, totalExpense: 0, savingsRate: 0, transactionCount: 0 }, 
+    categorySpending = [], 
+    recentTransactions = [], 
+    monthlyTrends = [], 
+    overallBudget = { limit: 0, spent: 0, remainingCents: 0, percentage: 0, status: 'Healthy' as const }, 
+    flaggedTransactions = [] 
+  } = data || {};
 
   const handleExport = (format: 'csv' | 'json') => {
     window.location.href = `/api/export?format=${format}`;
   };
 
-  // Sparkline generator helper
-  const maxTrend = Math.max(...monthlyTrends.map((t) => Math.max(t.income, t.expense)), 100);
+  // Sparkline generator helper safely guarded
+  const maxTrend = (monthlyTrends && monthlyTrends.length > 0)
+    ? Math.max(...monthlyTrends.map((t) => Math.max(t?.income || 0, t?.expense || 0)), 100)
+    : 100;
 
   return (
     <div className="space-y-6">

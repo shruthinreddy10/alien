@@ -56,11 +56,14 @@ export default function HomePage() {
       if (res.ok) {
         const json = await res.json();
         setUser(json.user);
-        // Direct to role home immediately
+        // Direct to role home or URL tab param if provided
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const requestedTab = urlParams?.get('tab');
+
         if (json.user.role === 'ADMIN') {
-          setCurrentTab('admin-users');
+          setCurrentTab(requestedTab?.startsWith('admin-') ? requestedTab : 'admin-users');
         } else {
-          setCurrentTab('dashboard');
+          setCurrentTab(requestedTab && !requestedTab.startsWith('admin-') ? requestedTab : 'dashboard');
         }
       } else {
         setUser(null);
