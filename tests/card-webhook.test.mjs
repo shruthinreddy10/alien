@@ -7,7 +7,8 @@ import path from 'node:path';
 const DB_PATH = path.join(process.cwd(), 'data', 'fintrack.db');
 
 test('v5.0: Demo Cards PCI compliance and tokenization', async () => {
-  const db = new DatabaseSync(DB_PATH);
+  const db = new DatabaseSync(DB_PATH, { readOnly: true });
+  db.exec('PRAGMA busy_timeout = 5000;');
   const cards = db.prepare('SELECT * FROM demo_cards').all();
 
   assert.ok(cards.length >= 2, 'Expected at least 2 seeded demo cards');
@@ -41,7 +42,8 @@ test('v5.0: Webhook HMAC-SHA256 signature verification formula', async () => {
 });
 
 test('v5.0: Webhook transaction auto-capture idempotency and card link', async () => {
-  const db = new DatabaseSync(DB_PATH);
+  const db = new DatabaseSync(DB_PATH, { readOnly: true });
+  db.exec('PRAGMA busy_timeout = 5000;');
   
   // Verify transactions table has source, card_id, card_last4, webhook_ref columns
   const cols = db.prepare("PRAGMA table_info(transactions)").all();

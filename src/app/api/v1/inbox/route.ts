@@ -63,9 +63,9 @@ export function autoCategorize(merchant: string, db: ReturnType<typeof getDb>, u
 
 // GET /api/v1/inbox - List inbox notifications with source and status filters
 export async function GET(req: NextRequest) {
-  const auth = await requireUser(req);
-  if (!auth.authenticated || !auth.user) {
-    return auth.response;
+  const auth = requireUser(req);
+  if ('errorResponse' in auth) {
+    return auth.errorResponse;
   }
 
   const db = getDb();
@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
     LEFT JOIN categories c ON i.suggested_category_id = c.id
     WHERE i.user_id = ?
   `;
-  const params: unknown[] = [auth.user.id];
+  const params: (string | number)[] = [auth.session.userId];
 
   if (status !== 'ALL') {
     query += ` AND i.status = ?`;
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
       SUM(CASE WHEN confidence = 'HIGH' THEN 1 ELSE 0 END) as high_conf_count
     FROM inbox_notifications
     WHERE user_id = ? AND status = 'PENDING'
-  `).get(auth.user.id) as Record<string, number>;
+  `).get(auth.session.userId) as Record<string, number>;
 
   return NextResponse.json({
     notifications,

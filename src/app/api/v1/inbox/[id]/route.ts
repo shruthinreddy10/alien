@@ -6,8 +6,8 @@ import crypto from 'node:crypto';
 
 // GET /api/v1/inbox/:id - Retrieve single notification
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireUser(req);
-  if (!auth.authenticated || !auth.user) return auth.response;
+  const auth = requireUser(req);
+  if ('errorResponse' in auth) return auth.errorResponse;
 
   const { id } = await params;
   const db = getDb();
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     FROM inbox_notifications i
     LEFT JOIN categories c ON i.suggested_category_id = c.id
     WHERE i.id = ? AND i.user_id = ?
-  `).get(id, auth.user.id);
+  `).get(id, auth.session.userId);
 
   if (!item) {
     return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
@@ -28,8 +28,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE /api/v1/inbox/:id - Delete single notification
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireUser(req);
-  if (!auth.authenticated || !auth.user) return auth.response;
+  const auth = requireUser(req);
+  if ('errorResponse' in auth) return auth.errorResponse;
 
   const { id } = await params;
   const db = getDb();
@@ -39,9 +39,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (!existing) {
     return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
   }
-  if (existing.user_id !== auth.user.id) {
+  if (existing.user_id !== auth.session.userId) {
     logAuditEvent({
-      userId: auth.user.id,
+      userId: auth.session.userId,
       action: 'ACCESS_DENIED_IDOR',
       entityType: 'inbox_notifications',
       entityId: id,
@@ -53,7 +53,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   db.prepare(`DELETE FROM inbox_notifications WHERE id = ?`).run(id);
 
   logAuditEvent({
-    userId: auth.user.id,
+    userId: auth.session.userId,
     action: 'INBOX_NOTIFICATION_DELETED',
     entityType: 'inbox_notifications',
     entityId: id,

@@ -23,8 +23,9 @@ export const TransactionCreateSchema = z.object({
   type: z.enum(['INCOME', 'EXPENSE']),
   description: z.string().min(1, 'Description is required').max(200),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-  paymentMethod: z.enum(['Card', 'Bank', 'Cash', 'Crypto']).default('Card'),
+  paymentMethod: z.string().default('Card'),
   notes: z.string().max(500).optional().nullable(),
+  attachmentUrl: z.string().optional().nullable(),
 });
 
 export const TransactionUpdateSchema = TransactionCreateSchema.partial();

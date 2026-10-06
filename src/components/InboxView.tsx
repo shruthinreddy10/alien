@@ -14,7 +14,8 @@ import {
   RefreshCw, 
   ArrowRight,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 import { formatINR } from '@/lib/money';
 
@@ -47,6 +48,22 @@ export default function InboxView({ onRefreshDashboard }: { onRefreshDashboard?:
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [animatingOutId, setAnimatingOutId] = useState<string | null>(null);
+  const [inspectingItem, setInspectingItem] = useState<InboxNotification | null>(null);
+
+  const handleOpenDetail = async (item: InboxNotification) => {
+    setInspectingItem(item);
+    try {
+      const res = await fetch(`/api/v1/inbox/${item.id}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.notification) {
+          setInspectingItem(json.notification);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load notification details:', e);
+    }
+  };
 
   const fetchInbox = async () => {
     try {
@@ -369,36 +386,149 @@ export default function InboxView({ onRefreshDashboard }: { onRefreshDashboard?:
                     <div className="text-[10px] text-slate-500 uppercase font-mono">Paise Scoped</div>
                   </div>
 
-                  {item.status === 'PENDING' ? (
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleConfirm(item)}
-                        disabled={actionInProgress === item.id}
-                        className="px-3 py-1.5 bg-[#0F5132] hover:bg-[#146c43] text-white rounded-lg text-xs font-semibold transition-all fintech-btn active:scale-95 flex items-center gap-1 shadow-sm"
-                        title="Confirm as Expense in Ledger"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Confirm</span>
-                      </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenDetail(item)}
+                      className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                      title="View Details"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
 
-                      <button
-                        onClick={() => handleIgnore(item)}
-                        disabled={actionInProgress === item.id}
-                        className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
-                        title="Dismiss notification"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-xs font-mono text-emerald-400 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
-                      Confirmed
-                    </span>
-                  )}
+                    {item.status === 'PENDING' ? (
+                      <>
+                        <button
+                          onClick={() => handleConfirm(item)}
+                          disabled={actionInProgress === item.id}
+                          className="px-3 py-1.5 bg-[#0F5132] hover:bg-[#146c43] text-white rounded-lg text-xs font-semibold transition-all fintech-btn active:scale-95 flex items-center gap-1 shadow-sm"
+                          title="Confirm as Expense in Ledger"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Confirm</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleIgnore(item)}
+                          disabled={actionInProgress === item.id}
+                          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                          title="Dismiss notification"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-xs font-mono text-emerald-400 px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
+                        Confirmed
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Inspect Item Details Modal */}
+      {inspectingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+          <div className="bg-[#11161F] border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  inspectingItem.source === 'UPI' ? 'bg-emerald-500/10 text-emerald-400' :
+                  inspectingItem.source === 'CARD' ? 'bg-blue-500/10 text-blue-400' : 'bg-amber-500/10 text-amber-400'
+                }`}>
+                  {inspectingItem.source === 'UPI' && <Smartphone className="w-4 h-4" />}
+                  {inspectingItem.source === 'CARD' && <CreditCard className="w-4 h-4" />}
+                  {inspectingItem.source === 'EMAIL' && <Mail className="w-4 h-4" />}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">{inspectingItem.merchant}</h3>
+                  <span className="text-[10px] font-mono text-slate-400">{inspectingItem.id}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setInspectingItem(null)}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 bg-[#0A0E14] border border-white/5 rounded-xl">
+                <span className="text-slate-400 text-[10px] uppercase font-mono">Amount</span>
+                <div className="text-base font-bold font-mono text-white mt-0.5">
+                  {formatINR(inspectingItem.amount_minor)}
+                </div>
+              </div>
+              <div className="p-3 bg-[#0A0E14] border border-white/5 rounded-xl">
+                <span className="text-slate-400 text-[10px] uppercase font-mono">Confidence</span>
+                <div className="text-sm font-semibold text-emerald-400 mt-0.5">
+                  {inspectingItem.confidence} Confidence
+                </div>
+              </div>
+              <div className="p-3 bg-[#0A0E14] border border-white/5 rounded-xl">
+                <span className="text-slate-400 text-[10px] uppercase font-mono">Suggested Category</span>
+                <div className="text-sm font-semibold text-slate-200 mt-0.5">
+                  {inspectingItem.category_name || 'General Expense'}
+                </div>
+              </div>
+              <div className="p-3 bg-[#0A0E14] border border-white/5 rounded-xl">
+                <span className="text-slate-400 text-[10px] uppercase font-mono">Status</span>
+                <div className="text-sm font-semibold text-slate-200 mt-0.5">
+                  {inspectingItem.status}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[10px] font-mono uppercase text-slate-400 mb-1 block">Raw Payload Data</span>
+              <pre className="p-3 bg-[#0A0E14] border border-white/5 rounded-xl text-[11px] font-mono text-emerald-300 overflow-x-auto max-h-40">
+                {(() => {
+                  try {
+                    return JSON.stringify(JSON.parse(inspectingItem.raw_payload), null, 2);
+                  } catch {
+                    return inspectingItem.raw_payload;
+                  }
+                })()}
+              </pre>
+            </div>
+
+            <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2">
+              <button
+                onClick={() => setInspectingItem(null)}
+                className="px-3.5 py-2 text-xs font-semibold text-slate-300 bg-[#0A0E14] hover:bg-[#1A2029] rounded-lg"
+              >
+                Close
+              </button>
+              {inspectingItem.status === 'PENDING' && (
+                <>
+                  <button
+                    onClick={() => {
+                      const item = inspectingItem;
+                      setInspectingItem(null);
+                      handleIgnore(item);
+                    }}
+                    className="px-3.5 py-2 text-xs font-semibold text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-lg"
+                  >
+                    Dismiss
+                  </button>
+                  <button
+                    onClick={() => {
+                      const item = inspectingItem;
+                      setInspectingItem(null);
+                      handleConfirm(item);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-white bg-[#0F5132] hover:bg-[#146c43] rounded-lg shadow-sm"
+                  >
+                    Confirm as Expense
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

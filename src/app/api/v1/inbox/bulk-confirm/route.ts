@@ -7,8 +7,8 @@ import crypto from 'node:crypto';
 
 // POST /api/v1/inbox/bulk-confirm - Confirm multiple notifications or all high confidence
 export async function POST(req: NextRequest) {
-  const auth = await requireUser(req);
-  if (!auth.authenticated || !auth.user) return auth.response;
+  const auth = requireUser(req);
+  if ('errorResponse' in auth) return auth.errorResponse;
 
   const db = getDb();
   let idsToConfirm: string[] = [];
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       const highRows = db.prepare(`
         SELECT id FROM inbox_notifications 
         WHERE user_id = ? AND status = 'PENDING' AND confidence = 'HIGH'
-      `).all(auth.user.id) as { id: string }[];
+      `).all(auth.session.userId) as { id: string }[];
       idsToConfirm = highRows.map(r => r.id);
     }
   } catch (_) {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const highRows = db.prepare(`
       SELECT id FROM inbox_notifications 
       WHERE user_id = ? AND status = 'PENDING' AND confidence = 'HIGH'
-    `).all(auth.user.id) as { id: string }[];
+    `).all(auth.session.userId) as { id: string }[];
     idsToConfirm = highRows.map(r => r.id);
   }
 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       const notif = db.prepare(`
         SELECT * FROM inbox_notifications 
         WHERE id = ? AND user_id = ? AND status = 'PENDING'
-      `).get(id, auth.user.id) as {
+      `).get(id, auth.session.userId) as {
         id: string;
         user_id: string;
         source: string;
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         ) VALUES (?, ?, ?, ?, 'EXPENSE', ?, ?, ?, ?, ?, NULL, 0, NULL, ?, ?)
       `).run(
         txId,
-        auth.user.id,
+        auth.session.userId,
         categoryId,
         notif.amount_minor,
         notif.merchant,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       confirmedCount++;
 
       try {
-        detectAnomaliesForTransaction(txId);
+        detectAnomaliesForTransaction(auth.session.userId, txId);
       } catch (_) {}
     }
 
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
   }
 
   logAuditEvent({
-    userId: auth.user.id,
+    userId: auth.session.userId,
     action: 'INBOX_BULK_CONFIRMED',
     entityType: 'inbox_notifications',
     details: { count: confirmedCount },

@@ -1,23 +1,60 @@
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
+import crypto from 'node:crypto';
 
-const DB_DIR = path.join(process.cwd(), 'data');
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
+function getDatabasePath(): string {
+  if (process.env.DATABASE_PATH) {
+    const dir = path.dirname(process.env.DATABASE_PATH);
+    if (!fs.existsSync(dir)) {
+      try { fs.mkdirSync(dir, { recursive: true }); } catch (_) {}
+    }
+    return process.env.DATABASE_PATH;
+  }
+
+  const isServerless = !!(
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.LAMBDA_TASK_ROOT
+  );
+
+  if (isServerless) {
+    const tmpPath = path.join(os.tmpdir(), 'fintrack.db');
+    const bundledPath = path.join(process.cwd(), 'data', 'fintrack.db');
+    if (!fs.existsSync(tmpPath) && fs.existsSync(bundledPath)) {
+      try {
+        fs.copyFileSync(bundledPath, tmpPath);
+      } catch (e) {
+        console.warn('Could not copy bundled db to tmp:', e);
+      }
+    }
+    return tmpPath;
+  }
+
+  const localDir = path.join(process.cwd(), 'data');
+  try {
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    return path.join(localDir, 'fintrack.db');
+  } catch (err) {
+    console.warn('Read-only local directory, falling back to os.tmpdir():', err);
+    return path.join(os.tmpdir(), 'fintrack.db');
+  }
 }
-
-const DB_PATH = path.join(DB_DIR, 'fintrack.db');
 
 // Singleton database connection
 let dbInstance: DatabaseSync | null = null;
 
 export function getDb(): DatabaseSync {
   if (!dbInstance) {
-    dbInstance = new DatabaseSync(DB_PATH);
+    const dbPath = getDatabasePath();
+    dbInstance = new DatabaseSync(dbPath);
     dbInstance.exec('PRAGMA foreign_keys = ON;');
     dbInstance.exec('PRAGMA journal_mode = WAL;');
     initSchema(dbInstance);
+    seedBaselineIfNeeded(dbInstance);
   }
   return dbInstance;
 }
@@ -300,6 +337,8 @@ export function initSchema(db: DatabaseSync) {
   try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN title TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN description TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN metadata TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE transactions ADD COLUMN attachment_url TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE transactions ADD COLUMN attachmentUrl TEXT;`); } catch (_) {}
 
   // Ensure default Uncategorized system category exists
   try {
@@ -309,4 +348,111 @@ export function initSchema(db: DatabaseSync) {
       VALUES ('cat_uncategorized', NULL, 'Uncategorized', 'HelpCircle', '#64748B', 1, ?)
     `).run(now);
   } catch (_) {}
+}
+
+function hashPasswordInternal(password: string): string {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = crypto.scryptSync(password, salt, 64);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
+
+export function seedBaselineIfNeeded(db: DatabaseSync) {
+  try {
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number } | undefined;
+    if (userCount && userCount.count > 0) {
+      return; // Already seeded
+    }
+
+    const nowIso = new Date().toISOString();
+    const demoUserId = 'usr_demo_user_76';
+    const demoAdminId = 'usr_demo_admin_76';
+
+    const userPass = hashPasswordInternal('Password123!');
+    const adminPass = hashPasswordInternal('AdminPass123!');
+
+    const insertUser = db.prepare(`
+      INSERT OR REPLACE INTO users (id, email, name, password_hash, role, status, two_factor_enabled, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 'ACTIVE', 0, ?, ?)
+    `);
+    insertUser.run(demoUserId, 'user@demo.com', 'Shruthin Reddy', userPass, 'USER', '2026-05-01T00:00:00Z', nowIso);
+    insertUser.run(demoAdminId, 'admin@demo.com', 'Sarah Connor (Security Admin)', adminPass, 'ADMIN', '2026-05-01T00:00:00Z', nowIso);
+
+    // Categories
+    const categories = [
+      { id: 'cat_salary', name: 'Salary & Income', icon: 'Wallet', color: '#10B981', is_system: 1 },
+      { id: 'cat_freelance', name: 'Freelance & Consulting', icon: 'Coins', color: '#059669', is_system: 1 },
+      { id: 'cat_housing', name: 'Rent & Housing', icon: 'Home', color: '#3B82F6', is_system: 1 },
+      { id: 'cat_food', name: 'Food & Dining', icon: 'Utensils', color: '#F59E0B', is_system: 1 },
+      { id: 'cat_groceries', name: 'Groceries & Mart', icon: 'ShoppingBag', color: '#10B981', is_system: 1 },
+      { id: 'cat_transport', name: 'Transport & Auto', icon: 'Car', color: '#8B5CF6', is_system: 1 },
+      { id: 'cat_utilities', name: 'Utilities & Bills', icon: 'Zap', color: '#6366F1', is_system: 1 },
+      { id: 'cat_entertainment', name: 'Entertainment & Movies', icon: 'Film', color: '#EC4899', is_system: 1 },
+      { id: 'cat_shopping', name: 'Shopping & Retail', icon: 'ShoppingBag', color: '#EC4899', is_system: 1 },
+      { id: 'cat_health', name: 'Health & Medical', icon: 'Heart', color: '#EF4444', is_system: 1 },
+      { id: 'cat_investments', name: 'Investments & SIP', icon: 'TrendingUp', color: '#10B981', is_system: 1 },
+      { id: 'cat_subscriptions', name: 'Subscriptions', icon: 'CreditCard', color: '#6366F1', is_system: 1 },
+      { id: 'cat_misc', name: 'General & Misc', icon: 'MoreHorizontal', color: '#64748B', is_system: 1 },
+      { id: 'cat_custom_coffee', name: 'Coffee', icon: 'Coffee', color: '#D97706', is_system: 0 },
+      { id: 'cat_custom_pet', name: 'Pet Care', icon: 'Heart', color: '#10B981', is_system: 0 },
+      { id: 'cat_custom_gaming', name: 'Gaming', icon: 'Gamepad2', color: '#8B5CF6', is_system: 0 },
+    ];
+
+    const insertCat = db.prepare(`
+      INSERT OR REPLACE INTO categories (id, user_id, name, icon, color, is_system, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const c of categories) {
+      insertCat.run(c.id, c.is_system ? null : demoUserId, c.name, c.icon, c.color, c.is_system, nowIso);
+    }
+
+    // Seed sample transactions
+    const insertTx = db.prepare(`
+      INSERT OR REPLACE INTO transactions (id, user_id, category_id, amount, type, description, date, payment_method, notes, tags, receipt_key, is_recurring, recurrence_rule, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertTx.run('tx_seed_1', demoUserId, 'cat_salary', 8500000, 'INCOME', 'Salary Credit - Tech Innovations Ltd', '2026-10-01', 'Net Banking', 'Monthly corporate payroll direct deposit', JSON.stringify(['salary']), null, 1, 'MONTHLY', nowIso, nowIso);
+    insertTx.run('tx_seed_2', demoUserId, 'cat_housing', 2800000, 'EXPENSE', 'HDFC Home Rent Transfer', '2026-10-02', 'Net Banking', 'Flat 402, Green Glen Layout', JSON.stringify(['rent']), null, 1, 'MONTHLY', nowIso, nowIso);
+    insertTx.run('tx_seed_3', demoUserId, 'cat_food', 124000, 'EXPENSE', 'Swiggy Gourmet Order #98124', '2026-10-03', 'UPI', 'Meghana Biryani with friends', JSON.stringify(['food']), null, 0, null, nowIso, nowIso);
+    insertTx.run('tx_seed_4', demoUserId, 'cat_groceries', 342000, 'EXPENSE', 'BigBasket Weekly Groceries', '2026-10-04', 'Card', 'Fruits, vegetables, dairy staples', JSON.stringify(['groceries']), null, 0, null, nowIso, nowIso);
+    insertTx.run('tx_seed_5', demoUserId, 'cat_custom_coffee', 45000, 'EXPENSE', 'Starbucks India Espresso Roast', '2026-10-05', 'UPI', 'Morning latte', JSON.stringify(['coffee']), null, 0, null, nowIso, nowIso);
+
+    // Seed sample pending inbox notifications
+    const insertInbox = db.prepare(`
+      INSERT OR REPLACE INTO inbox_notifications (
+        id, user_id, source, amount_minor, merchant, raw_payload,
+        suggested_category_id, confidence, status, received_at, confirmed_at, transaction_id, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertInbox.run(
+      'inbox_seed_1', demoUserId, 'UPI', 54000, 'Swiggy Instant Order',
+      JSON.stringify({ type: 'UPI_DEBIT', amount: 54000, merchant: 'Swiggy', ref: 'UPI/2026/89123' }),
+      'cat_food', 'HIGH', 'PENDING', new Date(Date.now() - 3600000).toISOString(), null, null, nowIso
+    );
+    insertInbox.run(
+      'inbox_seed_2', demoUserId, 'CARD', 189000, 'DMart Supermarket',
+      JSON.stringify({ type: 'CARD_ALERT', amount: 189000, merchant: 'DMart Supermarket', last4: '4821' }),
+      'cat_groceries', 'HIGH', 'PENDING', new Date(Date.now() - 7200000).toISOString(), null, null, nowIso
+    );
+    insertInbox.run(
+      'inbox_seed_3', demoUserId, 'EMAIL', 78900, 'IRCTC Express Reservation',
+      JSON.stringify({ type: 'EMAIL_RECEIPT', amount: 78900, merchant: 'IRCTC Express Reservation', pnr: '421980312' }),
+      'cat_transport', 'HIGH', 'PENDING', new Date(Date.now() - 14400000).toISOString(), null, null, nowIso
+    );
+    insertInbox.run(
+      'inbox_seed_4', demoUserId, 'UPI', 28000, 'Blue Tokai Coffee Roasters',
+      JSON.stringify({ type: 'UPI_DEBIT', amount: 28000, merchant: 'Blue Tokai Coffee Roasters', ref: 'UPI/2026/41029' }),
+      'cat_custom_coffee', 'HIGH', 'PENDING', new Date(Date.now() - 28800000).toISOString(), null, null, nowIso
+    );
+
+    // Seed demo card
+    const insertCard = db.prepare(`
+      INSERT OR REPLACE INTO demo_cards (
+        id, user_id, token, brand, last4, holder_name, expiry_month, expiry_year, nickname, is_active, created_at, last_used_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    `);
+    insertCard.run('card_seed_1', demoUserId, 'card_tok_demo_4821', 'VISA', '4821', 'Shruthin Reddy', 12, 2028, 'HDFC Millennia', nowIso, nowIso);
+
+  } catch (err) {
+    console.warn('Baseline seeding note:', err);
+  }
 }

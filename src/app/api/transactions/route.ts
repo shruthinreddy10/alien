@@ -95,6 +95,8 @@ export async function GET(req: NextRequest) {
       t.notes,
       t.tags,
       t.receipt_key,
+      t.attachment_url,
+      t.attachment_url as attachmentUrl,
       t.is_recurring,
       t.recurrence_rule,
       t.created_at,
@@ -177,18 +179,19 @@ export async function POST(req: NextRequest) {
     const isRecurring = body.isRecurring ? 1 : 0;
     const recurrenceRule = body.recurrenceRule || null;
     const receiptKey = body.receiptKey || null;
+    const attachmentUrl = parsed.data.attachmentUrl || body.attachmentUrl || body.attachment_url || null;
 
     db.prepare(`
-      INSERT INTO transactions (id, user_id, category_id, amount, type, description, date, payment_method, notes, tags, receipt_key, is_recurring, recurrence_rule, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(txId, userId, categoryId, amount, type, description.trim(), date, paymentMethod, notes || null, tagsJson, receiptKey, isRecurring, recurrenceRule, now, now);
+      INSERT INTO transactions (id, user_id, category_id, amount, type, description, date, payment_method, notes, tags, receipt_key, is_recurring, recurrence_rule, attachment_url, attachmentUrl, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(txId, userId, categoryId, amount, type, description.trim(), date, paymentMethod, notes || null, tagsJson, receiptKey, isRecurring, recurrenceRule, attachmentUrl, attachmentUrl, now, now);
 
     logAuditEvent({
       userId,
       action: 'TRANSACTION_CREATE',
       entityType: 'transactions',
       entityId: txId,
-      details: { amount, type, description, categoryId, date },
+      details: { amount, type, description, categoryId, date, hasAttachment: !!attachmentUrl },
       ipAddress: getClientIp(req),
     });
 
@@ -207,6 +210,8 @@ export async function POST(req: NextRequest) {
           date,
           paymentMethod,
           notes,
+          attachmentUrl,
+          attachment_url: attachmentUrl,
           createdAt: now,
         },
         flaggedAnomalies: detectedAnomalies,

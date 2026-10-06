@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Search, 
   Plus, 
@@ -16,7 +16,10 @@ import {
   Tag,
   Clock,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Paperclip,
+  UploadCloud,
+  ExternalLink
 } from 'lucide-react';
 import { formatINR, parseToPaise } from '@/lib/money';
 
@@ -31,6 +34,8 @@ interface Transaction {
   notes: string | null;
   category_name: string | null;
   category_color: string | null;
+  attachment_url?: string | null;
+  attachmentUrl?: string | null;
   anomaly_id?: string | null;
   anomaly_rule?: string | null;
   anomaly_level?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
@@ -108,6 +113,13 @@ export default function TransactionsView({
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
+  // Attachment upload state
+  const [formAttachmentUrl, setFormAttachmentUrl] = useState('');
+  const [formAttachmentName, setFormAttachmentName] = useState('');
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Populate form when editingTx changes
   useEffect(() => {
     if (editingTx) {
@@ -119,6 +131,9 @@ export default function TransactionsView({
       setFormMethod((editingTx.payment_method as any) || 'UPI');
       setFormNotes(editingTx.notes || '');
       setFormUpiRef('');
+      setFormAttachmentUrl(editingTx.attachment_url || editingTx.attachmentUrl || '');
+      setFormAttachmentName(editingTx.attachment_url || editingTx.attachmentUrl ? 'Attached Document' : '');
+      setUploadError('');
     } else {
       setFormDescription('');
       setFormAmountStr('');
@@ -128,8 +143,52 @@ export default function TransactionsView({
       setFormMethod('UPI');
       setFormNotes('');
       setFormUpiRef('');
+      setFormAttachmentUrl('');
+      setFormAttachmentName('');
+      setUploadError('');
     }
   }, [editingTx, categories]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError('');
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'application/pdf'];
+    if (!allowed.includes(file.type.toLowerCase())) {
+      setUploadError('Invalid format. Please select PNG, JPEG, WebP, or PDF.');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File size exceeds the 10 MB limit.');
+      return;
+    }
+
+    setUploadingAttachment(true);
+    setFormAttachmentName(file.name);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/v1/transactions/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error || 'Failed to upload attachment');
+        setFormAttachmentUrl('');
+        setFormAttachmentName('');
+      } else {
+        setFormAttachmentUrl(data.url);
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Network error during file upload');
+      setFormAttachmentUrl('');
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -198,6 +257,7 @@ export default function TransactionsView({
           date: formDate,
           paymentMethod: formMethod,
           notes: combinedNotes,
+          attachmentUrl: formAttachmentUrl || null,
         }),
       });
 
@@ -215,6 +275,10 @@ export default function TransactionsView({
         setFormDescription('');
         setFormNotes('');
         setFormUpiRef('');
+        setFormAttachmentUrl('');
+        setFormAttachmentName('');
+        setUploadError('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } else {
         closeSheet();
       }
@@ -242,6 +306,10 @@ export default function TransactionsView({
 
   const closeSheet = () => {
     setEditingTx(null);
+    setFormAttachmentUrl('');
+    setFormAttachmentName('');
+    setUploadError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
     onCloseAddModal();
   };
 
@@ -434,6 +502,21 @@ export default function TransactionsView({
                               )}
                             </div>
                             {tx.notes && <div className="text-[11px] text-slate-400 mt-0.5">{tx.notes}</div>}
+                            {(tx.attachment_url || tx.attachmentUrl) && (
+                              <div className="mt-1">
+                                <a
+                                  href={(tx.attachment_url || tx.attachmentUrl)!}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors font-medium"
+                                  title="View Receipt / Attachment"
+                                >
+                                  <Paperclip className="w-3 h-3 text-emerald-400" />
+                                  <span>Receipt / PDF</span>
+                                  <ExternalLink className="w-2.5 h-2.5 text-emerald-400" />
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -693,6 +776,84 @@ export default function TransactionsView({
                   onChange={(e) => setFormNotes(e.target.value)}
                   className="w-full px-3 py-2 bg-[#0A0E14] border border-white/10 rounded-lg text-white text-xs focus:outline-none focus:border-emerald-500"
                 />
+              </div>
+
+              {/* Receipt / Attachment Upload */}
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">
+                  Receipt / Document Attachment (Image or PDF)
+                </label>
+
+                {formAttachmentUrl ? (
+                  <div className="flex items-center justify-between p-2.5 bg-[#0A0E14] border border-emerald-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <Paperclip className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="text-xs text-white truncate font-medium">
+                        {formAttachmentName || 'Attached Document'}
+                      </span>
+                      <a
+                        href={formAttachmentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-emerald-400 hover:underline flex items-center gap-0.5 shrink-0 ml-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>View</span>
+                      </a>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormAttachmentUrl('');
+                        setFormAttachmentName('');
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-400 rounded transition-colors"
+                      title="Remove attachment"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="tx-file-upload-input"
+                    />
+                    <label
+                      htmlFor="tx-file-upload-input"
+                      className={`flex flex-col items-center justify-center p-3.5 border border-dashed rounded-lg cursor-pointer transition-all ${
+                        uploadingAttachment
+                          ? 'border-emerald-500/50 bg-emerald-500/5 pointer-events-none'
+                          : 'border-white/15 bg-[#0A0E14] hover:border-emerald-500/40 hover:bg-[#131922]'
+                      }`}
+                    >
+                      {uploadingAttachment ? (
+                        <div className="flex items-center gap-2 text-emerald-400">
+                          <UploadCloud className="w-4 h-4 animate-bounce" />
+                          <span className="text-xs font-semibold">Uploading to Vercel Blob...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-slate-400">
+                          <UploadCloud className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span className="text-xs font-medium text-slate-300">Upload receipt (PNG, JPEG, WebP, PDF)</span>
+                          <span className="text-[10px] text-slate-500 font-mono">Max 10MB</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                )}
+
+                {uploadError && (
+                  <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                    <span>{uploadError}</span>
+                  </p>
+                )}
               </div>
 
               {/* Sheet Action Footer */}

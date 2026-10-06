@@ -7,8 +7,8 @@ import crypto from 'node:crypto';
 
 // POST /api/v1/inbox/:id/confirm - Convert inbox notification to real transaction
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireUser(req);
-  if (!auth.authenticated || !auth.user) return auth.response;
+  const auth = requireUser(req);
+  if ('errorResponse' in auth) return auth.errorResponse;
 
   const { id } = await params;
   const db = getDb();
@@ -30,9 +30,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // IDOR protection
-  if (notif.user_id !== auth.user.id) {
+  if (notif.user_id !== auth.session.userId) {
     logAuditEvent({
-      userId: auth.user.id,
+      userId: auth.session.userId,
       action: 'ACCESS_DENIED_IDOR',
       entityType: 'inbox_notifications',
       entityId: id,
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ) VALUES (?, ?, ?, ?, 'EXPENSE', ?, ?, ?, ?, ?, NULL, 0, NULL, ?, ?)
     `).run(
       txId,
-      auth.user.id,
+      auth.session.userId,
       customCategoryId,
       notif.amount_minor,
       customMerchant,
@@ -100,12 +100,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // 3. Run anomaly detection check
   try {
-    detectAnomaliesForTransaction(txId);
+    detectAnomaliesForTransaction(auth.session.userId, txId);
   } catch (_) {}
 
   // 4. Audit log
   logAuditEvent({
-    userId: auth.user.id,
+    userId: auth.session.userId,
     action: 'INBOX_NOTIFICATION_CONFIRMED',
     entityType: 'inbox_notifications',
     entityId: id,

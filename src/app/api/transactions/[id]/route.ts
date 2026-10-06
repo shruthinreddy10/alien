@@ -82,6 +82,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       updates.push('notes = ?');
       values.push(data.notes);
     }
+    if (data.attachmentUrl !== undefined || (body as any).attachmentUrl !== undefined || (body as any).attachment_url !== undefined) {
+      const attUrl = data.attachmentUrl !== undefined ? data.attachmentUrl : ((body as any).attachmentUrl ?? (body as any).attachment_url);
+      updates.push('attachment_url = ?', 'attachmentUrl = ?');
+      values.push(attUrl, attUrl);
+    }
 
     values.push(id, userId);
     db.prepare(`

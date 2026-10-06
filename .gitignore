@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 .next/
+*.tsbuildinfo
 
 # Runtime data
 data/

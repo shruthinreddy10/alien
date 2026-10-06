@@ -5,8 +5,8 @@ import { logAuditEvent } from '@/lib/security';
 
 // POST /api/v1/inbox/:id/ignore - Dismiss notification
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireUser(req);
-  if (!auth.authenticated || !auth.user) return auth.response;
+  const auth = requireUser(req);
+  if ('errorResponse' in auth) return auth.errorResponse;
 
   const { id } = await params;
   const db = getDb();
@@ -21,9 +21,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
   }
 
-  if (notif.user_id !== auth.user.id) {
+  if (notif.user_id !== auth.session.userId) {
     logAuditEvent({
-      userId: auth.user.id,
+      userId: auth.session.userId,
       action: 'ACCESS_DENIED_IDOR',
       entityType: 'inbox_notifications',
       entityId: id,
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   db.prepare(`UPDATE inbox_notifications SET status = 'IGNORED' WHERE id = ?`).run(id);
 
   logAuditEvent({
-    userId: auth.user.id,
+    userId: auth.session.userId,
     action: 'INBOX_NOTIFICATION_IGNORED',
     entityType: 'inbox_notifications',
     entityId: id,

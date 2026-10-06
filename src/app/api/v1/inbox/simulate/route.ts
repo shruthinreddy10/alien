@@ -144,8 +144,8 @@ const SIMULATION_POOL = [
 
 // POST /api/v1/inbox/simulate - Generates a new live simulated notification
 export async function POST(req: NextRequest) {
-  const auth = await requireUser(req);
-  if (!auth.authenticated || !auth.user) return auth.response;
+  const auth = requireUser(req);
+  if ('errorResponse' in auth) return auth.errorResponse;
 
   const db = getDb();
   const pick = SIMULATION_POOL[Math.floor(Math.random() * SIMULATION_POOL.length)];
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
   const id = `inbox_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
 
-  const { categoryId, confidence } = autoCategorize(pick.merchant, db, auth.user.id);
+  const { categoryId, confidence } = autoCategorize(pick.merchant, db, auth.session.userId);
   const rawPayload = JSON.stringify(pick.rawTemplate(amountMinor, id));
 
   db.prepare(`
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, NULL, NULL, ?)
   `).run(
     id,
-    auth.user.id,
+    auth.session.userId,
     pick.source,
     amountMinor,
     pick.merchant,
@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
   );
 
   logAuditEvent({
-    userId: auth.user.id,
+    userId: auth.session.userId,
     action: 'INBOX_NOTIFICATION_SIMULATED',
     entityType: 'inbox_notifications',
     entityId: id,
