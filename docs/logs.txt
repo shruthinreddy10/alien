@@ -818,3 +818,63 @@ Actions Taken:
 * Ran test suite with npm test and verified 8/8 tests pass
 * Updated docs/APPROACH.md with ADR-007 and committed to git
 
+================================================================================
+[2026-10-06T12:05:45+05:30] FinTrack v5.0 — Card-Linked Auto-Expense Capture & Realtime SSE Stream
+================================================================================
+User Prompt (verbatim):
+# MASTER PROMPT — FinTrack v5.0
+# Feature: Card-Linked Auto-Expense Capture (Demo)
+# User adds a demo card → makes a demo payment → transaction
+# auto-appears in FinTrack expense tracker with zero manual entry.
+# Theme: "Build it. Secure it. Make it work."
+# Do NOT break existing auth, RBAC, audit log, or AI.
+# All additions are additive and forward-only.
+
+Agent Response:
+Successfully built and shipped FinTrack v5.0 with end-to-end Card-Linked Auto-Expense Capture:
+1. Demo Card Management (/settings/cards & /api/v1/cards): PCI-DSS compliant mock tokenization (stores only last4, brand, holder name, and card_tok_xxxx; full PAN and CVV are strictly dropped from memory and never persisted; re-authentication password confirmation required on creation).
+2. Signature-Verified Webhook Gateway (/api/v1/webhooks/card-payment): Public endpoint verifying HMAC-SHA256 signature via X-FinTrack-Signature header, enforcing 100 req/min IP rate limiting, 5-minute timestamp replay protection, idempotency on reference, and 30-second near-duplicate transaction filtering. Automatically maps merchants to categories (Swiggy/Zomato -> Food Delivery, BigBasket/Blinkit/DMart -> Groceries, etc.), creates the ledger entry with source="CARD_WEBHOOK", runs inline anomaly detection, and logs to the cryptographic audit chain.
+3. Interactive Payment Simulator (/demo/pay & PaymentSimulatorView): Demo merchant preset picker with amounts, card selector, and 1-tap HMAC webhook dispatch.
+4. Standalone External Demo Merchant (/demo/merchant): Independent public merchant checkout page allowing multi-tab demonstration where a payment on an external merchant immediately pushes to FinTrack.
+5. Realtime SSE Stream (/api/v1/stream/transactions): User-scoped Server-Sent Events stream with 30s heartbeat. When payments arrive, client receives real-time transaction updates, displays an animated bottom-right toast with 5s progress bar, updates KPI cards, and refreshes the ledger without browser reload.
+6. Comprehensive Tests: Added tests/card-webhook.test.mjs validating PCI tokenization, HMAC verification, and ledger columns. All 11 automated test suites pass.
+
+Agent Response Summary:
+Implemented FinTrack v5.0 Card-Linked Auto-Expense Capture with PCI-compliant card tokenization, HMAC-SHA256 signature verification, in-app Payment Simulator, external demo merchant checkout, and real-time Server-Sent Events (SSE) updates. Tested and verified all endpoints and security constraints.
+
+Commit SHA:
+42415af
+
+Files Modified / Created:
+* src/lib/db.ts (Modified)
+* src/lib/realtime.ts (Created)
+* src/app/api/v1/cards/route.ts (Created)
+* src/app/api/v1/cards/[id]/route.ts (Created)
+* src/app/api/v1/webhooks/card-payment/route.ts (Created)
+* src/app/api/v1/demo/pay/route.ts (Created)
+* src/app/api/v1/demo/merchants/route.ts (Created)
+* src/app/api/v1/stream/transactions/route.ts (Created)
+* src/components/CardsView.tsx (Created)
+* src/components/PaymentSimulatorView.tsx (Created)
+* src/app/demo/merchant/page.tsx (Created)
+* src/components/Sidebar.tsx (Modified)
+* src/app/page.tsx (Modified)
+* scripts/seed.mjs (Modified)
+* .env.example (Created)
+* docs/APPROACH.md (Modified)
+* tests/card-webhook.test.mjs (Created)
+* docs/logs.txt (Modified)
+
+Actions Taken:
+* Created demo_cards and webhook_events tables in SQLite with forward-only column migrations on transactions
+* Created realtime.ts pub/sub manager for Server-Sent Events
+* Built /api/v1/cards CRUD endpoints with re-authentication and tokenization
+* Built /api/v1/webhooks/card-payment with HMAC-SHA256 verification, replay protection, rate limiting, and auto-categorization
+* Built /api/v1/demo/pay and /api/v1/demo/merchants simulator endpoints
+* Built /api/v1/stream/transactions SSE streaming endpoint with user-level authorization
+* Created CardsView.tsx, PaymentSimulatorView.tsx, and /demo/merchant page
+* Wired real-time SSE listener and animated bottom-right toast in page.tsx
+* Seeded demo cards for user@demo.com and ran test suite with 11/11 tests passing
+* Updated docs/APPROACH.md with ADR-008 and committed changes under git commit 42415af
+
+
