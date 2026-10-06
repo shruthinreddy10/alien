@@ -134,7 +134,7 @@ export function getRecentTransactionsTool(userId: string, limit: number = 5) {
     SELECT t.date, t.type, t.amount, t.description, c.name as category
     FROM transactions t
     LEFT JOIN categories c ON t.category_id = c.id
-    WHERE t.user_id = ?
+    WHERE t.user_id = ? AND t.deleted_at IS NULL
     ORDER BY t.date DESC, t.created_at DESC
     LIMIT ?
   `).all(userId, limit) as Array<{ date: string; type: string; amount: number; description: string; category: string | null }>;
@@ -145,6 +145,43 @@ export function getRecentTransactionsTool(userId: string, limit: number = 5) {
     amountFormatted: formatCents(t.amount),
     description: t.description,
     category: t.category || 'Uncategorized',
+  }));
+}
+
+export function getAnomaliesTool(userId: string, dateRange?: string, severity?: string) {
+  const db = getDb();
+  let sql = `
+    SELECT 
+      a.id, a.rule, a.severity, 
+      COALESCE(a.level, 'MEDIUM') as level,
+      COALESCE(a.title, a.rule) as title,
+      COALESCE(a.description, a.details) as description,
+      a.created_at,
+      t.amount, t.description as tx_desc, t.date as tx_date,
+      c.name as category_name
+    FROM anomaly_alerts a
+    LEFT JOIN transactions t ON a.transaction_id = t.id
+    LEFT JOIN categories c ON t.category_id = c.id
+    WHERE a.user_id = ?
+  `;
+  const params: any[] = [userId];
+  if (severity && severity !== 'all') {
+    sql += ` AND (LOWER(a.severity) = ? OR LOWER(COALESCE(a.level, '')) = ?)`;
+    params.push(severity.toLowerCase(), severity.toLowerCase());
+  }
+  sql += ` ORDER BY a.created_at DESC LIMIT 10`;
+
+  const rows = db.prepare(sql).all(...params) as any[];
+  return rows.map(r => ({
+    id: r.id,
+    rule: r.rule,
+    level: r.level,
+    title: r.title,
+    description: r.description,
+    amountFormatted: r.amount ? formatCents(r.amount) : 'N/A',
+    merchant: r.tx_desc || 'Unknown',
+    date: r.tx_date || r.created_at?.slice(0, 10),
+    category: r.category_name || 'General',
   }));
 }
 
@@ -191,6 +228,7 @@ export async function processAiQuery(params: {
 
   let responseMarkdown = '';
 
+  const wantsAnomalies = normalized.includes('unusual') || normalized.includes('anomal') || normalized.includes('flagged') || normalized.includes('suspicious') || normalized.includes('why was this flagged');
   const wantsSummary = normalized.includes('summary') || normalized.includes('balance') || normalized.includes('income') || normalized.includes('spend') || normalized.includes('net');
   const wantsCategories = normalized.includes('category') || normalized.includes('categories') || normalized.includes('where') || normalized.includes('breakdown') || normalized.includes('food') || normalized.includes('rent');
   const wantsBudgets = normalized.includes('budget') || normalized.includes('limit') || normalized.includes('overspend') || normalized.includes('warning');
@@ -209,7 +247,20 @@ export async function processAiQuery(params: {
   const budgetData = getBudgetHealthTool(userId);
   toolCalls.push({ toolName: 'get_budget_health', arguments: { userId }, output: budgetData });
 
-  if (wantsAdvice) {
+  if (wantsAnomalies) {
+    const anomalies = getAnomaliesTool(userId);
+    toolCalls.push({ toolName: 'get_anomalies', arguments: { userId, dateRange: 'last_30_days' }, output: anomalies });
+
+    if (anomalies.length === 0) {
+      responseMarkdown = `### 🛡️ Financial Anomaly Status\n\nNo unusual or suspicious transactions were detected for your account this month. All charges are within standard statistical boundaries!`;
+    } else {
+      const anomList = anomalies.map(a => 
+        `- ⚠️ **${a.title}** (${a.level} severity, rule: \`${a.rule}\`)\n  - **Transaction:** ${a.merchant} on \`${a.date}\` (${a.amountFormatted})\n  - **Detection Reason:** ${a.description}`
+      ).join('\n\n');
+
+      responseMarkdown = `### ⚠️ Detected Unusual & Flagged Transactions\n\nHere are the transactions flagged by our autonomous heuristic monitoring engine:\n\n${anomList}\n\n*You can review, acknowledge, or mark these as normal in the **Alerts** tab.*`;
+    }
+  } else if (wantsAdvice) {
     // Generate personalized advice based on real numbers
     const topCategory = categoryData.breakdown[0];
     const savingsAdvice = summary.savingsRatePercentage < 20

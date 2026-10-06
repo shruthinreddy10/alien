@@ -57,6 +57,20 @@ interface DashboardViewProps {
       percentage: number;
       status: 'Healthy' | 'Warning' | 'Exceeded';
     };
+    flaggedTransactions?: Array<{
+      id: string;
+      transaction_id: string | null;
+      rule: string;
+      severity: number | string;
+      level: 'LOW' | 'MEDIUM' | 'HIGH';
+      title: string;
+      description: string;
+      created_at: string;
+      transaction_amount: number | null;
+      transaction_description: string | null;
+      transaction_date: string | null;
+      category_name: string | null;
+    }>;
   } | null;
   loading: boolean;
   onOpenAddTx: () => void;
@@ -424,6 +438,92 @@ export default function DashboardView({
         </div>
       </div>
 
+      {/* Flagged Transactions Card (Top 3 Unacknowledged Anomalies per 13.1 UI specification) */}
+      <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-slate-200 flex items-center gap-2">
+                <span>Flagged Transactions</span>
+                {data.flaggedTransactions && data.flaggedTransactions.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/30 text-[10px] font-mono text-rose-300 font-bold">
+                    {data.flaggedTransactions.length} UNACKNOWLEDGED
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-slate-400">Heuristic outlier & fraud alerts requiring verification</p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigateTab('alerts')}
+            className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+          >
+            <span>View All in Alerts</span>
+            <span>&rarr;</span>
+          </button>
+        </div>
+
+        {(!data.flaggedTransactions || data.flaggedTransactions.length === 0) ? (
+          <div className="p-4 rounded-lg bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>All accounts clear. No unacknowledged anomalies or suspicious charges detected!</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {data.flaggedTransactions.slice(0, 3).map((a) => (
+              <div
+                key={a.id}
+                className="p-4 rounded-lg bg-slate-950 border border-slate-800/90 hover:border-amber-500/40 transition-colors flex flex-col justify-between gap-3"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                        a.level === 'HIGH'
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                          : a.level === 'MEDIUM'
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                      }`}
+                    >
+                      {a.level} SEVERITY
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      {a.transaction_date || a.created_at.slice(0, 10)}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-semibold text-slate-100 flex items-center gap-1.5">
+                    <span>⚠️</span>
+                    <span className="truncate">{a.title}</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                    {a.description}
+                  </p>
+                  {a.transaction_amount !== null && (
+                    <div className="mt-2 text-xs font-mono font-bold text-rose-300">
+                      Charge: {formatCents(a.transaction_amount)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[11px]">
+                  <span className="text-slate-500 font-mono text-[10px]">{a.rule}</span>
+                  <button
+                    onClick={() => onNavigateTab('alerts')}
+                    className="text-indigo-400 hover:text-indigo-300 font-semibold"
+                  >
+                    Review &rarr;
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Bottom Section: Recent Ledger Transactions Table */}
       <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
@@ -445,7 +545,7 @@ export default function DashboardView({
               No transactions recorded yet. Click &quot;Add Transaction&quot; to begin!
             </div>
           ) : (
-            recentTransactions.map((tx) => (
+            recentTransactions.map((tx: any) => (
               <div key={tx.id} className="py-3 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div
@@ -458,7 +558,18 @@ export default function DashboardView({
                     {tx.category_name ? tx.category_name.slice(0, 2).toUpperCase() : 'TX'}
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-slate-200">{tx.description}</div>
+                    <div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                      <span>{tx.description}</span>
+                      {tx.anomaly_id && (
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-0.5 cursor-pointer"
+                          title={`Flagged Anomaly: ${tx.anomaly_rule || 'Outlier'}`}
+                          onClick={() => onNavigateTab('alerts')}
+                        >
+                          ⚠️ Flagged
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-slate-400 flex items-center gap-2">
                       <span>{tx.date}</span>
                       <span>&bull;</span>

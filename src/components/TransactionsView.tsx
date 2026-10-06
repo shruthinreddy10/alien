@@ -27,6 +27,10 @@ interface Transaction {
   notes: string | null;
   category_name: string | null;
   category_color: string | null;
+  anomaly_id?: string | null;
+  anomaly_rule?: string | null;
+  anomaly_level?: 'LOW' | 'MEDIUM' | 'HIGH' | null;
+  anomaly_severity?: number | string | null;
 }
 
 interface Category {
@@ -370,7 +374,18 @@ export default function TransactionsView({
                   <tr key={tx.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="py-3 px-4 font-mono text-slate-400">{tx.date}</td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-white">{tx.description}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-white">{tx.description}</span>
+                        {tx.anomaly_id && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-medium"
+                            title={`Anomaly Alert: ${tx.anomaly_rule || 'Flagged Outlier'}`}
+                          >
+                            <span>⚠️</span>
+                            <span className="font-mono text-[9px] uppercase">{tx.anomaly_level || 'ALERT'}</span>
+                          </span>
+                        )}
+                      </div>
                       {tx.notes && <div className="text-[10px] text-slate-400">{tx.notes}</div>}
                     </td>
                     <td className="py-3 px-4">

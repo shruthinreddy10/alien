@@ -11,13 +11,20 @@ export async function GET(req: NextRequest) {
   const userId = auth.session.userId;
 
   const db = getDb();
-  // Return all system categories plus user custom categories
+  // Return all system categories plus user custom categories with transaction count and active budget
   const categories = db.prepare(`
-    SELECT id, name, icon, color, is_system, user_id, created_at
-    FROM categories
-    WHERE is_system = 1 OR user_id = ?
-    ORDER BY is_system DESC, name ASC
-  `).all(userId);
+    SELECT 
+      c.id, c.name, c.icon, c.color, c.is_system, c.user_id, c.created_at,
+      COUNT(t.id) as transaction_count,
+      b.id as budget_id,
+      b.amount as budget_amount
+    FROM categories c
+    LEFT JOIN transactions t ON c.id = t.category_id AND t.user_id = ? AND t.deleted_at IS NULL
+    LEFT JOIN budgets b ON c.id = b.category_id AND b.user_id = ?
+    WHERE c.is_system = 1 OR c.user_id = ?
+    GROUP BY c.id
+    ORDER BY c.is_system DESC, c.name ASC
+  `).all(userId, userId, userId);
 
   return NextResponse.json({ categories });
 }

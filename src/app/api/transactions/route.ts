@@ -4,6 +4,7 @@ import { requireUser, getClientIp } from '@/lib/auth-helper';
 import { getDb } from '@/lib/db';
 import { TransactionCreateSchema } from '@/lib/schemas';
 import { logAuditEvent } from '@/lib/security';
+import { detectAnomaliesForTransaction } from '@/lib/anomaly-detector';
 
 export async function GET(req: NextRequest) {
   const auth = requireUser(req);
@@ -35,8 +36,8 @@ export async function GET(req: NextRequest) {
 
   const db = getDb();
 
-  // Strict Row-Level Authorization: user_id is MANDATORY in all query branches
-  const conditions: string[] = ['t.user_id = ?'];
+  // Strict Row-Level Authorization: user_id is MANDATORY in all query branches. Filter soft-deleted txns.
+  const conditions: string[] = ['t.user_id = ?', '(t.deleted_at IS NULL)'];
   const params: any[] = [userId];
 
   if (search) {
@@ -100,9 +101,14 @@ export async function GET(req: NextRequest) {
       t.updated_at,
       c.name as category_name,
       c.icon as category_icon,
-      c.color as category_color
+      c.color as category_color,
+      anom.id as anomaly_id,
+      anom.rule as anomaly_rule,
+      anom.level as anomaly_level,
+      anom.severity as anomaly_severity
     FROM transactions t
     LEFT JOIN categories c ON t.category_id = c.id
+    LEFT JOIN anomaly_alerts anom ON t.id = anom.transaction_id AND anom.dismissed_at IS NULL
     WHERE ${whereClause}
     ORDER BY t.date DESC, t.created_at DESC
     LIMIT ? OFFSET ?
@@ -186,6 +192,9 @@ export async function POST(req: NextRequest) {
       ipAddress: getClientIp(req),
     });
 
+    // Run quick anomaly detection hook on transaction insert (rules: amount_outlier, duplicate_charge, unusual_time)
+    const detectedAnomalies = detectAnomaliesForTransaction(userId, txId);
+
     return NextResponse.json(
       {
         transaction: {
@@ -200,6 +209,7 @@ export async function POST(req: NextRequest) {
           notes,
           createdAt: now,
         },
+        flaggedAnomalies: detectedAnomalies,
         message: 'Transaction created successfully',
       },
       { status: 201 }

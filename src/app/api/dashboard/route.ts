@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) as total_expense,
       COUNT(*) as total_transactions
     FROM transactions
-    WHERE user_id = ?
+    WHERE user_id = ? AND deleted_at IS NULL
   `).get(userId) as { total_income: number; total_expense: number; total_transactions: number };
 
   const totalIncome = totals.total_income;
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
       COUNT(t.id) as count
     FROM transactions t
     JOIN categories c ON t.category_id = c.id
-    WHERE t.user_id = ? AND t.type = 'EXPENSE'
+    WHERE t.user_id = ? AND t.type = 'EXPENSE' AND t.deleted_at IS NULL
     GROUP BY c.id
     ORDER BY total_amount DESC
   `).all(userId) as Array<{
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     count: number;
   }>;
 
-  // 3. Recent Transactions (Last 5)
+  // 3. Recent Transactions (Last 6)
   const recentTransactions = db.prepare(`
     SELECT 
       t.id,
@@ -59,10 +59,14 @@ export async function GET(req: NextRequest) {
       t.payment_method,
       c.name as category_name,
       c.icon as category_icon,
-      c.color as category_color
+      c.color as category_color,
+      anom.id as anomaly_id,
+      anom.rule as anomaly_rule,
+      anom.level as anomaly_level
     FROM transactions t
     LEFT JOIN categories c ON t.category_id = c.id
-    WHERE t.user_id = ?
+    LEFT JOIN anomaly_alerts anom ON t.id = anom.transaction_id AND anom.dismissed_at IS NULL
+    WHERE t.user_id = ? AND t.deleted_at IS NULL
     ORDER BY t.date DESC, t.created_at DESC
     LIMIT 6
   `).all(userId);
@@ -74,7 +78,7 @@ export async function GET(req: NextRequest) {
       SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END) as income,
       SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END) as expense
     FROM transactions
-    WHERE user_id = ?
+    WHERE user_id = ? AND deleted_at IS NULL
     GROUP BY month
     ORDER BY month ASC
     LIMIT 6
@@ -98,12 +102,41 @@ export async function GET(req: NextRequest) {
   const currentMonthSpentRow = db.prepare(`
     SELECT COALESCE(SUM(amount), 0) as spent
     FROM transactions
-    WHERE user_id = ? AND type = 'EXPENSE' AND date >= ? AND date < ?
+    WHERE user_id = ? AND type = 'EXPENSE' AND date >= ? AND date < ? AND deleted_at IS NULL
   `).get(userId, currentMonthStart, currentMonthEnd) as { spent: number };
 
   const overallLimit = overallBudgetRow ? overallBudgetRow.amount : 0;
   const currentMonthSpent = currentMonthSpentRow ? currentMonthSpentRow.spent : 0;
   const overallBudgetHealth = calculateBudgetStatus(currentMonthSpent, overallLimit);
+
+  // 6. Top 3 Unacknowledged Flagged Transactions
+  const flaggedTransactions = db.prepare(`
+    SELECT 
+      a.id,
+      a.transaction_id,
+      a.rule,
+      a.severity,
+      COALESCE(a.level, 
+        CASE 
+          WHEN a.severity >= 0.7 OR a.severity = 'high' THEN 'HIGH'
+          WHEN a.severity >= 0.4 OR a.severity = 'medium' THEN 'MEDIUM'
+          ELSE 'LOW'
+        END
+      ) as level,
+      COALESCE(a.title, a.rule) as title,
+      COALESCE(a.description, a.details) as description,
+      a.created_at,
+      t.amount as transaction_amount,
+      t.description as transaction_description,
+      t.date as transaction_date,
+      c.name as category_name
+    FROM anomaly_alerts a
+    LEFT JOIN transactions t ON a.transaction_id = t.id
+    LEFT JOIN categories c ON t.category_id = c.id
+    WHERE a.user_id = ? AND a.acknowledged_at IS NULL AND a.dismissed_at IS NULL
+    ORDER BY a.created_at DESC
+    LIMIT 3
+  `).all(userId);
 
   return NextResponse.json({
     kpis: {
@@ -116,6 +149,7 @@ export async function GET(req: NextRequest) {
     categorySpending,
     recentTransactions,
     monthlyTrends,
+    flaggedTransactions,
     overallBudget: {
       limit: overallLimit,
       spent: currentMonthSpent,

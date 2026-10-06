@@ -136,7 +136,11 @@ db.exec(`
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     transaction_id TEXT REFERENCES transactions(id) ON DELETE CASCADE,
     rule TEXT NOT NULL,
-    severity TEXT NOT NULL DEFAULT 'medium' CHECK(severity IN ('low', 'medium', 'high')),
+    severity REAL NOT NULL DEFAULT 0.5,
+    level TEXT NOT NULL DEFAULT 'MEDIUM',
+    title TEXT,
+    description TEXT,
+    metadata TEXT,
     details TEXT,
     acknowledged_at TEXT,
     dismissed_at TEXT,
@@ -181,7 +185,25 @@ db.exec(`
     status TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS category_undo_sessions (
+    id TEXT PRIMARY KEY,
+    category_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    category_data TEXT NOT NULL,
+    action TEXT NOT NULL,
+    reassigned_to TEXT,
+    affected_tx_ids TEXT NOT NULL,
+    deleted_budget_data TEXT,
+    created_at TEXT NOT NULL
+  );
 `);
+
+try { db.exec(`ALTER TABLE transactions ADD COLUMN deleted_at TEXT;`); } catch (_) {}
+try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN level TEXT DEFAULT 'MEDIUM';`); } catch (_) {}
+try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN title TEXT;`); } catch (_) {}
+try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN description TEXT;`); } catch (_) {}
+try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN metadata TEXT;`); } catch (_) {}
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -227,6 +249,7 @@ const categories = [
   { id: 'cat_shopping', name: 'Shopping & Goods', icon: 'Package', color: '#14B8A6' },
   { id: 'cat_subscriptions', name: 'Subscriptions', icon: 'RefreshCw', color: '#A855F7' },
   { id: 'cat_misc', name: 'Miscellaneous', icon: 'HelpCircle', color: '#64748B' },
+  { id: 'cat_uncategorized', name: 'Uncategorized', icon: 'HelpCircle', color: '#64748B' },
 ];
 
 const insertCat = db.prepare(`
@@ -260,6 +283,7 @@ const insertTx = db.prepare(`
 `);
 
 // Date range: 2026-05-01 to 2026-10-05 (6 months)
+const pad = (n) => String(n).padStart(2, '0');
 const months = [
   { year: 2026, month: 5, name: '2026-05' },
   { year: 2026, month: 6, name: '2026-06' },
@@ -273,7 +297,6 @@ let globalTxCounter = 1;
 
 for (const uId of [demoUserId, demoAdminId]) {
   for (const m of months) {
-    const pad = (n) => String(n).padStart(2, '0');
     const ym = `${m.year}-${pad(m.month)}`;
 
     // Monthly recurring income (1st)
@@ -314,7 +337,63 @@ for (const uId of [demoUserId, demoAdminId]) {
   }
 }
 
-// 4. Budgets for user@demo.com
+// 3.5 Custom Categories for user@demo.com per 13.2 specification
+const customCategories = [
+  { id: 'cat_custom_coffee', name: 'Coffee', icon: 'Coffee', color: '#D97706' },
+  { id: 'cat_custom_pet', name: 'Pet Care', icon: 'Heart', color: '#10B981' },
+  { id: 'cat_custom_gaming', name: 'Gaming', icon: 'Gamepad2', color: '#8B5CF6' },
+];
+
+const insertCustomCategory = db.prepare(`
+  INSERT OR REPLACE INTO categories (id, user_id, name, icon, color, is_system, created_at)
+  VALUES (?, ?, ?, ?, ?, 0, ?)
+`);
+for (const cc of customCategories) {
+  insertCustomCategory.run(cc.id, demoUserId, cc.name, cc.icon, cc.color, nowIso);
+}
+
+// Seed 12 Coffee transactions for user@demo.com
+const coffeeNames = [
+  'Blue Bottle Single Origin', 'Artisan Espresso Bar', 'Starbucks Blonde Roast', 'Philz Mint Mojito Coffee',
+  'Cold Brew & Almond Croissant', 'Pour Over Chemex Ethiopia', 'Matcha Latte & Cookie', 'Flat White Cortado',
+  'Stumptown Nitro Cold Brew', 'Local Roastery Beans', 'Iced Americano', 'Specialty Drip Coffee'
+];
+for (let i = 0; i < 12; i++) {
+  const dStr = `2026-09-${pad((i % 28) + 1)}`;
+  insertTx.run(`tx_seed_coffee_${i}`, demoUserId, 'cat_custom_coffee', 450 + (i * 30), 'EXPENSE', coffeeNames[i], dStr, 'Card', 'Coffee routine', JSON.stringify([]), null, 0, null, nowIso, nowIso);
+}
+
+// Pet Care has 0 transactions seeded
+
+// Seed 28 Gaming transactions for user@demo.com
+const gamingNames = [
+  'Steam Summer Sale RPG', 'PlayStation Plus Essential', 'Nintendo eShop Indie Title', 'Discord Nitro Annual',
+  'Xbox Game Pass Ultimate', 'Twitch Creator Subscription', 'Cyberpunk DLC Expansion', 'Elden Ring Shadow of Erdtree',
+  'Mechanical Gaming Keycaps', 'Steam Deck OLED Case', 'Humble Bundle Choice', 'GOG Classic Collection',
+  'Razer Mousepad & Grips', 'Battle Pass Season 4', 'Valve CS2 Prime Upgrade', 'Epic Games Weekly Special',
+  'Final Fantasy XIV Sub', 'Factorio Space Age', 'Hollow Knight Silksong Preorder', 'RetroArch Controller Adapter',
+  'Origin EA Play Monthly', 'Ubisoft+ Classics', 'Blizzard Battle.net Token', 'GeForce NOW Priority Tier',
+  'Sony DualSense Charging Dock', 'Capcom Monster Hunter Wilds', 'Steam Workshop Asset Pack', 'Itch.io Creator Bundle'
+];
+for (let i = 0; i < 28; i++) {
+  const mIdx = (i % 5) + 5;
+  const day = (i % 25) + 1;
+  const dStr = `2026-${pad(mIdx)}-${pad(day)}`;
+  insertTx.run(`tx_seed_gaming_${i}`, demoUserId, 'cat_custom_gaming', 1999 + (i * 250), 'EXPENSE', gamingNames[i], dStr, 'Card', 'Gaming hobby', JSON.stringify([]), null, 0, null, nowIso, nowIso);
+}
+
+// Seed the 2 specific anomaly transactions per 13.1 specification
+// 1. ₹1,200 Starbucks (3x Food & Dining avg)
+const txStarbucksId = 'tx_seed_starbucks_spike';
+insertTx.run(txStarbucksId, demoUserId, 'cat_food', 120000, 'EXPENSE', 'Starbucks Reserve Tasting', '2026-10-04', 'Card', 'Unusual high spend', JSON.stringify(['flagged']), null, 0, null, nowIso, nowIso);
+
+// 2. Netflix charged twice on same day (2026-10-04)
+const txNetflix1 = 'tx_seed_netflix_dup1';
+const txNetflix2 = 'tx_seed_netflix_dup2';
+insertTx.run(txNetflix1, demoUserId, 'cat_subscriptions', 2299, 'EXPENSE', 'Netflix Premium', '2026-10-04', 'Card', 'Monthly charge 1', JSON.stringify([]), null, 0, null, nowIso, nowIso);
+insertTx.run(txNetflix2, demoUserId, 'cat_subscriptions', 2299, 'EXPENSE', 'Netflix Premium', '2026-10-04', 'Card', 'Accidental duplicate charge', JSON.stringify([]), null, 0, null, nowIso, nowIso);
+
+// 4. Budgets for user@demo.com (including Gaming budget per 13.2 specification)
 db.prepare('DELETE FROM budgets').run();
 const insertBudget = db.prepare(`
   INSERT INTO budgets (id, user_id, category_id, amount, period, created_at, updated_at)
@@ -324,6 +403,7 @@ insertBudget.run('bdg_user_overall', demoUserId, null, 280000, 'MONTHLY', nowIso
 insertBudget.run('bdg_user_housing', demoUserId, 'cat_housing', 150000, 'MONTHLY', nowIso, nowIso);
 insertBudget.run('bdg_user_food', demoUserId, 'cat_food', 30000, 'MONTHLY', nowIso, nowIso);
 insertBudget.run('bdg_user_ent', demoUserId, 'cat_entertainment', 5000, 'MONTHLY', nowIso, nowIso);
+insertBudget.run('bdg_user_gaming', demoUserId, 'cat_custom_gaming', 500000, 'MONTHLY', nowIso, nowIso); // ₹5,000/mo Gaming budget
 
 // 5. Detected Subscriptions
 db.prepare('DELETE FROM subscriptions').run();
@@ -356,14 +436,61 @@ insertRec.run('rec_1', demoUserId, 'Luxury Apartment Rent', 145000, 'cat_housing
 insertRec.run('rec_2', demoUserId, 'Equinox Gym', 7500, 'cat_health', 'MONTHLY', '2026-11-15', 0, nowIso);
 insertRec.run('rec_3', demoUserId, 'Google Fiber Internet', 8400, 'cat_utilities', 'MONTHLY', '2026-11-20', 0, nowIso);
 
-// 8. Anomaly Alerts
-db.prepare('DELETE FROM anomaly_alerts').run();
-const insertAnomaly = db.prepare(`
-  INSERT INTO anomaly_alerts (id, user_id, transaction_id, rule, severity, details, acknowledged_at, dismissed_at, created_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+// 8. Anomaly Alerts (2 seeded unacknowledged anomalies for user@demo.com per 13.1 specification)
+db.exec('DROP TABLE IF EXISTS anomaly_alerts;');
+db.exec(`
+  CREATE TABLE anomaly_alerts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    transaction_id TEXT REFERENCES transactions(id) ON DELETE CASCADE,
+    rule TEXT NOT NULL,
+    severity REAL NOT NULL DEFAULT 0.5,
+    level TEXT NOT NULL DEFAULT 'MEDIUM',
+    title TEXT,
+    description TEXT,
+    metadata TEXT,
+    details TEXT,
+    acknowledged_at TEXT,
+    dismissed_at TEXT,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_anomalies_user ON anomaly_alerts(user_id);
 `);
-insertAnomaly.run('anom_1', demoUserId, null, 'UNUSUAL_MERCHANT_SPIKE', 'high', 'Transaction amount $850.00 is 3.4x higher than 30-day category average.', null, null, nowIso);
-insertAnomaly.run('anom_2', demoUserId, null, 'POTENTIAL_DUPLICATE_CHARGE', 'medium', 'Detected identical $22.99 charge within 15 minutes from Netflix.', null, null, nowIso);
+const insertAnomaly = db.prepare(`
+  INSERT INTO anomaly_alerts (id, user_id, transaction_id, rule, severity, level, title, description, metadata, details, acknowledged_at, dismissed_at, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`);
+insertAnomaly.run(
+  'anom_starbucks',
+  demoUserId,
+  txStarbucksId,
+  'amount_outlier',
+  0.85,
+  'HIGH',
+  'Unusual High Spend at Starbucks',
+  'Transaction amount ₹1,200 (₹1,200.00) is 3x higher than your Food & Dining 90-day average.',
+  JSON.stringify({ amount: 120000, categoryAvg: 40000, multiplier: 3.0, merchant: 'Starbucks Reserve' }),
+  'Transaction amount ₹1,200 (₹1,200.00) is 3x higher than your Food & Dining 90-day average.',
+  null,
+  null,
+  nowIso
+);
+
+insertAnomaly.run(
+  'anom_netflix_dup',
+  demoUserId,
+  txNetflix2,
+  'duplicate_charge',
+  0.65,
+  'MEDIUM',
+  'Potential Duplicate Netflix Charge',
+  'Detected identical ₹2,299 charge within 24 hours from Netflix.',
+  JSON.stringify({ amount: 2299, duplicateTxId: txNetflix1, merchant: 'Netflix Premium' }),
+  'Detected identical ₹2,299 charge within 24 hours from Netflix.',
+  null,
+  null,
+  nowIso
+);
 
 // 9. Feature Flags (1 disabled to demonstrate toggling)
 db.prepare('DELETE FROM feature_flags').run();

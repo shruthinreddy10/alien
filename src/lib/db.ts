@@ -164,7 +164,11 @@ export function initSchema(db: DatabaseSync) {
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       transaction_id TEXT REFERENCES transactions(id) ON DELETE CASCADE,
       rule TEXT NOT NULL,
-      severity TEXT NOT NULL DEFAULT 'medium' CHECK(severity IN ('low', 'medium', 'high')),
+      severity REAL NOT NULL DEFAULT 0.5,
+      level TEXT NOT NULL DEFAULT 'MEDIUM',
+      title TEXT,
+      description TEXT,
+      metadata TEXT,
       details TEXT,
       acknowledged_at TEXT,
       dismissed_at TEXT,
@@ -212,6 +216,20 @@ export function initSchema(db: DatabaseSync) {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_login_attempts_email ON login_attempts(email, created_at DESC);
+
+    -- Category Deletion Undo Sessions (30-second window support)
+    CREATE TABLE IF NOT EXISTS category_undo_sessions (
+      id TEXT PRIMARY KEY,
+      category_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      category_data TEXT NOT NULL,
+      action TEXT NOT NULL,
+      reassigned_to TEXT,
+      affected_tx_ids TEXT NOT NULL,
+      deleted_budget_data TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_cat_undo_user ON category_undo_sessions(user_id, created_at DESC);
   `);
 
   // Run forward-only column migrations gracefully in case DB already exists
@@ -223,4 +241,18 @@ export function initSchema(db: DatabaseSync) {
   try { db.exec(`ALTER TABLE transactions ADD COLUMN receipt_key TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE transactions ADD COLUMN is_recurring INTEGER NOT NULL DEFAULT 0;`); } catch (_) {}
   try { db.exec(`ALTER TABLE transactions ADD COLUMN recurrence_rule TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE transactions ADD COLUMN deleted_at TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN level TEXT DEFAULT 'MEDIUM';`); } catch (_) {}
+  try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN title TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN description TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN metadata TEXT;`); } catch (_) {}
+
+  // Ensure default Uncategorized system category exists
+  try {
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT OR IGNORE INTO categories (id, user_id, name, icon, color, is_system, created_at)
+      VALUES ('cat_uncategorized', NULL, 'Uncategorized', 'HelpCircle', '#64748B', 1, ?)
+    `).run(now);
+  } catch (_) {}
 }

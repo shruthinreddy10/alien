@@ -63,7 +63,7 @@ test('Tamper-evident audit log cryptographic integrity', () => {
 
     const detailsStr = entry.details || '{}';
     const recomputedHash = crypto.createHash('sha256')
-      .update(`${entry.prev_hash}|${entry.created_at}|${entry.user_id || 'SYSTEM'}|${entry.action}|${entry.entity_type}|${entry.entity_id || ''}|${detailsStr}`)
+      .update(`${entry.prev_hash}|${entry.created_at}|${entry.user_id || 'ANONYMOUS'}|${entry.action}|${entry.entity_type}|${entry.entity_id || ''}|${detailsStr}`)
       .digest('hex');
 
     assert.equal(entry.hash, recomputedHash, `Entry ${entry.id} hash must match recomputed SHA-256`);

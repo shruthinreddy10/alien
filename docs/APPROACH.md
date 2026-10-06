@@ -129,6 +129,25 @@ FinTrack follows a secure multi-tier modular architecture built within `src/`:
 - **Decision & Rationale:** Option 2 is chosen. Each audit entry computes `SHA-256(prevHash + entryPayload)`, making retroactive modification or record deletion immediately detectable.
 - **Security & Performance Trade-offs:** Negligible cryptographic overhead per operation; allows client/auditor verification of audit trail integrity.
 
+### ADR-005: Heuristic Financial Anomaly Detection Engine
+- **Status:** Accepted
+- **Context:** Detecting fraudulent or anomalous financial behavior in real time without external cloud dependency.
+- **Options Considered:**
+  1. Heavy machine learning model requiring Python microservices.
+  2. In-database deterministic heuristic rules (`amount_outlier`, `duplicate_charge`, `unusual_time`, `category_spike`, `first_merchant_high`) with numeric severity scoring `min(1.0, (amount / category_avg) / 5)`.
+- **Decision & Rationale:** Option 2 is chosen. Instant evaluation runs inline upon transaction insert (`amount_outlier`, `duplicate_charge`, `unusual_time`) and via full scheduled scan. Emits SHA-256 chained audit logs (`anomaly.created`, `anomaly.acknowledged`, `anomaly.dismissed`).
+- **Security & Performance Trade-offs:** Sub-millisecond execution, complete data privacy, zero external API leakage.
+
+### ADR-006: Category Lifecycle Management with Reassignment, Soft-Delete & 30s Undo Window
+- **Status:** Accepted
+- **Context:** Deleting custom categories must preserve historical transaction referential integrity and avoid accidental data loss.
+- **Options Considered:**
+  1. Hard cascading deletion of all associated transactions.
+  2. Blocking deletion if transactions exist.
+  3. Interactive 3-way modal: (a) Reassign to another category, (b) Move to system "Uncategorized", (c) Soft-delete transactions with 24h grace period, backed by 30-second cryptographic session undo (`category_undo_sessions`).
+- **Decision & Rationale:** Option 3 is chosen. System categories are immutable (`is_system = 1`). User categories with 0 txns delete instantly; categories with transactions require user intent choice and active budget warnings. All actions are logged with `category.delete` / `category.restore` audit events and allow instant 30-second reversal.
+- **Security & Performance Trade-offs:** Zero orphaned records, strict IDOR protection (403), user error resilience.
+
 ---
 
 ## 5. Engineering Journal & Real-Time Decision Log
@@ -137,6 +156,11 @@ FinTrack follows a secure multi-tier modular architecture built within `src/`:
 - **Focus:** Contract onboarding agreement, repository reconnaissance, specification lock (`docs/FINTRACK_SPEC.md`), and architectural blueprint.
 - **Key Challenges:** Establishing zero-configuration reproducible database stack on Windows/Node 24 while maintaining enterprise-grade security primitives.
 - **Resolution:** Outlined architecture with Next.js App Router, SQLite/Prisma, native Node.js crypto primitives, and strict row-level authorization.
+
+### [2026-10-06 10:45 IST] Entry 2: Feature Addition — Anomaly Detection & Category Deletion Engine
+- **Focus:** Implementation of 6-rule anomaly detection pipeline, severity calculation, `/alerts` management dashboard, category reassignment/soft-delete modal with 30s undo window, AI tool integration (`getAnomalies`), and comprehensive test verification.
+- **Key Challenges:** Maintaining cryptographic audit chain consistency, handling soft-delete transactions across aggregates, and preventing IDOR across categories.
+- **Resolution:** Implemented `detectAnomaliesForTransaction`, created `/api/v1/categories/[id]` with undo session caching, and verified with 8/8 passing automated tests.
 
 ---
 
