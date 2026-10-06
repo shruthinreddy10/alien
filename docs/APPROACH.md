@@ -157,6 +157,15 @@ FinTrack follows a secure multi-tier modular architecture built within `src/`:
 - **Decision & Rationale:** Option 2 chosen. Implemented `inbox_notifications` with strict user row-level scoping, an auto-categorization heuristic engine (Food Delivery, Groceries, Transport, Bills), one-click confirmation with atomic transaction creation, inline anomaly detection triggers, live simulated incoming notifications with real-time UI slide-in animation, and right-side Quick Add sheets with UPI reference tracking.
 - **Security & Performance Trade-offs:** Every inbox confirmation, simulation, and ignore event is recorded in the SHA-256 hash-chained audit log; IDOR is strictly blocked on all `/api/v1/inbox` endpoints.
 
+### ADR-008: Card-Linked Auto-Expense Capture & Cryptographic Webhook Stream
+- **Status:** Accepted
+- **Context:** Manual entry remains the primary barrier to regular bookkeeping. Simulating payment-linked auto-capture requires realistic card tokenization without PCI-DSS non-compliance risks, tamper-proof webhook verification, and instant real-time browser synchronization.
+- **Options Considered:**
+  1. Polling client-side setInterval loops with plain JSON webhooks.
+  2. PCI-DSS compliant tokenization (`demo_cards`), HMAC-SHA256 signature verification (`X-FinTrack-Signature`), 5-minute replay protection, idempotency enforcement on `reference`, and Server-Sent Events (SSE) realtime push scoped strictly per user.
+- **Decision & Rationale:** Option 2 is chosen. Demo cards store only `last4`, brand, holder name, and mock token; full PAN and CVV are never persisted. Webhook automatically creates transactions tagged with `source: CARD_WEBHOOK`, executes merchant category heuristics, and broadcasts to `/api/v1/stream/transactions`.
+- **Security & Performance Trade-offs:** Zero PII/card data leakage; timing-safe HMAC checks prevent forged webhooks; cross-tenant SSE isolation blocks unauthorized stream snooping.
+
 ---
 
 ## 5. Engineering Journal & Real-Time Decision Log
@@ -176,16 +185,22 @@ FinTrack follows a secure multi-tier modular architecture built within `src/`:
 - **Key Challenges:** Ensuring all monetary columns feature tabular numerals and vertical decimal alignment without breaking existing backend minor-unit arithmetic, and keeping test suite green.
 - **Resolution:** Retained backward-compatible minor-unit (paise/cents) contracts, added `inbox_notifications` table and APIs, converted UI surfaces to clean hairline borders and tabular numbers, verified 8/8 tests passing.
 
+### [2026-10-06 12:05 IST] Entry 4: FinTrack v5.0 — Card-Linked Auto-Expense Capture & Payment Simulator
+- **Focus:** Added Demo Cards management (`/api/v1/cards`, `CardsView`) with PCI-DSS-inspired mock tokenization (never stores full PAN or CVV; re-auth password required), public HMAC-SHA256 signature-verified webhook (`/api/v1/webhooks/card-payment`) with idempotency and 5-min replay protection, in-app Payment Simulator (`/demo/pay`, `PaymentSimulatorView`), external demo merchant checkout (`/demo/merchant`), Server-Sent Events stream (`/api/v1/stream/transactions`), and bottom-right animated toast with progress bar.
+- **Key Challenges:** Enforcing strict rate limiting (100 req/min per IP), cross-tab realtime updates, and timing-safe cryptographic comparisons.
+- **Resolution:** Built `realtimeStreamManager` pub/sub, added `demo_cards` and `webhook_events` schemas, verified 11/11 automated tests passing (`npm test`).
+
 ---
 
 ## 6. Testing, Security Verification & Deployment Record
 
 ### 6.1 Testing & Security Verification Strategy
-- **Unit & Integration Tests:** End-to-end tests for password hashing, AES-256-GCM encryption/decryption, row-level authorization IDOR tests, audit hash chain verification, anomaly detection rules, and category deletion workflows. All 8 automated test suites passing (`npm test`).
+- **Unit & Integration Tests:** End-to-end tests for password hashing, AES-256-GCM encryption/decryption, row-level authorization IDOR tests, audit hash chain verification, anomaly detection rules, category deletion workflows, and v5.0 card tokenization/HMAC webhook verification. All 11 automated test suites passing (`npm test`).
 - **Static Analysis & Linting:** Strict TypeScript type checking (`tsc --noEmit`), ESLint validation.
 
 ### 6.2 Deployment Verification
 - **Live Deployment Platform:** Self-contained Next.js production build (`npm run build && npm start`) / Vercel ready.
 - **Deployment URL:** [To be populated upon deployment]
 - **Health Check Endpoint:** `/api/health`
+
 

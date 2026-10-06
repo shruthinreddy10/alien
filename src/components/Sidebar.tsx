@@ -50,16 +50,22 @@ export default function Sidebar({
 
   const role = user.role;
 
-  // 2.8 & 3.1 FinTech User Navigation with Payments Inbox
+  // 2.8 & 3.1 & 5.5 FinTech User Navigation with Payments Inbox & Card Capture
   const userNav = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'inbox', label: 'Payments Inbox', icon: Inbox, badge: 'Live 15', highlight: true },
     { id: 'transactions', label: 'Ledger', icon: ArrowRightLeft },
+    { id: 'cards', label: 'Linked Cards', icon: CreditCard, badge: 'PCI Mock' },
     { id: 'budgets', label: 'Budgets', icon: PieChart },
     { id: 'goals', label: 'Savings Goals', icon: Target },
     { id: 'reports', label: 'Tax & Reports', icon: FileText },
     { id: 'ai', label: 'AI Assistant', icon: Sparkles },
     { id: 'alerts', label: 'Anomalies', icon: AlertTriangle, badge: '2 Active' },
+  ];
+
+  const demoNav = [
+    { id: 'demo-pay', label: 'Payment Simulator', icon: Sparkles, badge: 'Demo' },
+    { id: 'demo-merchant', label: 'Demo Merchant (External)', icon: CreditCard, external: true },
   ];
 
   const adminNav = [
@@ -201,6 +207,57 @@ export default function Sidebar({
                           {item.badge}
                         </span>
                       )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-white/5">
+              <div className="text-[10px] uppercase tracking-wider font-semibold text-amber-400 px-3 mb-1.5 flex items-center justify-between">
+                <span>Interactive Demos</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono">DEMO</span>
+              </div>
+              <nav className="space-y-0.5">
+                {demoNav.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentTab === item.id;
+                  if (item.external) {
+                    return (
+                      <a
+                        key={item.id}
+                        href="/demo/merchant"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Icon className="w-4 h-4 text-amber-400" />
+                          <span>{item.label}</span>
+                        </div>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded font-mono bg-[#11161F] text-amber-300 border border-amber-500/20">
+                          New Tab ↗
+                        </span>
+                      </a>
+                    );
+                  }
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => onTabChange(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                        isActive
+                          ? 'bg-[#0F5132] text-white font-semibold'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-amber-300' : 'text-slate-400'}`} />
+                        <span>{item.label}</span>
+                      </div>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {item.badge}
+                      </span>
                     </button>
                   );
                 })}

@@ -208,6 +208,33 @@ db.exec(`
     transaction_id TEXT REFERENCES transactions(id) ON DELETE SET NULL,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS demo_cards (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT UNIQUE NOT NULL,
+    brand TEXT NOT NULL CHECK(brand IN ('VISA', 'MASTERCARD', 'AMEX', 'RUPAY')),
+    last4 TEXT NOT NULL,
+    holder_name TEXT NOT NULL,
+    expiry_month INTEGER NOT NULL,
+    expiry_year INTEGER NOT NULL,
+    nickname TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS webhook_events (
+    id TEXT PRIMARY KEY,
+    reference TEXT UNIQUE NOT NULL,
+    event_type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    signature TEXT NOT NULL,
+    received_at TEXT NOT NULL,
+    processed_at TEXT,
+    status TEXT NOT NULL CHECK(status IN ('RECEIVED', 'PROCESSED', 'FAILED', 'DUPLICATE')),
+    error TEXT
+  );
 `);
 
 function hashPassword(password) {
@@ -667,6 +694,42 @@ for (let i = 0; i < inboxSeedItems.length; i++) {
     recTime
   );
 }
+
+// 12.5 Seed Demo Cards for Alex Mercer (user@demo.com)
+db.prepare('DELETE FROM demo_cards').run();
+db.prepare('DELETE FROM webhook_events').run();
+
+const insertDemoCard = db.prepare(`
+  INSERT INTO demo_cards (
+    id, user_id, token, brand, last4, holder_name, expiry_month, expiry_year, nickname, is_active, created_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+`);
+
+insertDemoCard.run(
+  'card_demo_1',
+  demoUserId,
+  'card_tok_1111_icici_demo',
+  'VISA',
+  '1111',
+  'Alex Mercer',
+  12,
+  2028,
+  'ICICI Coral Credit Card',
+  nowIso
+);
+
+insertDemoCard.run(
+  'card_demo_2',
+  demoUserId,
+  'card_tok_4821_hdfc_demo',
+  'RUPAY',
+  '4821',
+  'Alex Mercer',
+  6,
+  2027,
+  'HDFC Millennia RuPay Debit',
+  nowIso
+);
 
 // 13. Security & Admin Platform Data (no personal finance for admin)
 db.prepare('DELETE FROM feature_flags').run();

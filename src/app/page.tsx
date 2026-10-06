@@ -11,13 +11,16 @@ import GoalsView from '@/components/GoalsView';
 import ReportsView from '@/components/ReportsView';
 import AlertsView from '@/components/AlertsView';
 import InboxView from '@/components/InboxView';
+import CardsView from '@/components/CardsView';
+import PaymentSimulatorView from '@/components/PaymentSimulatorView';
 import AdminUsersView from '@/components/AdminUsersView';
 import AdminSecurityView from '@/components/AdminSecurityView';
 import AdminHealthView from '@/components/AdminHealthView';
 import AdminAnalyticsView from '@/components/AdminAnalyticsView';
 import SettingsViews from '@/components/SettingsViews';
 import AuthModal from '@/components/AuthModal';
-import { Shield, Lock, Database, ArrowRight, Cpu, CheckCircle2, AlertOctagon, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { formatINR } from '@/lib/money';
+import { Shield, Lock, Database, ArrowRight, Cpu, CheckCircle2, AlertOctagon, RefreshCw, Eye, EyeOff, Zap, Check } from 'lucide-react';
 
 export default function HomePage() {
   const [user, setUser] = useState<{
@@ -100,10 +103,59 @@ export default function HomePage() {
     }
   }, [user]);
 
+  // Realtime Webhook Captured Toast State
+  const [sseToast, setSseToast] = useState<{
+    id: string;
+    merchant: string;
+    amount: number;
+    category: string;
+    cardLast4: string;
+    hasAnomaly: boolean;
+  } | null>(null);
+
+  // SSE Realtime Stream Connection for authenticated USER
   useEffect(() => {
-    if (user && user.role === 'USER') {
-      loadUserData();
+    if (!user || user.role !== 'USER') return;
+
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/v1/stream/transactions');
+
+      eventSource.addEventListener('transaction.created', (e: MessageEvent) => {
+        try {
+          const payload = JSON.parse(e.data);
+          const tx = payload.transaction;
+
+          // Trigger live toast
+          setSseToast({
+            id: tx.id,
+            merchant: tx.merchant || tx.description,
+            amount: tx.amount,
+            category: tx.categoryName || 'Food Delivery',
+            cardLast4: tx.card_last4 || '1111',
+            hasAnomaly: !!payload.hasAnomaly,
+          });
+
+          // Automatically reload user financial state
+          loadUserData();
+
+          // Auto-dismiss toast after 5s
+          setTimeout(() => {
+            setSseToast(null);
+          }, 5000);
+        } catch (err) {
+          console.error('Error handling transaction.created SSE event:', err);
+        }
+      });
+    } catch (err) {
+      console.error('Failed to initialize SSE connection:', err);
     }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
   }, [user, loadUserData]);
 
   const handleLogout = async () => {
@@ -527,6 +579,9 @@ export default function HomePage() {
                   />
                 )}
 
+                {currentTab === 'cards' && <CardsView />}
+                {currentTab === 'demo-pay' && <PaymentSimulatorView onNavigateTab={handleTabChange} />}
+
                 {/* User Settings Sub-routes */}
                 {currentTab === 'settings-categories' && <SettingsViews subTab="categories" />}
                 {currentTab === 'settings-recurring' && <SettingsViews subTab="recurring" />}
@@ -549,6 +604,45 @@ export default function HomePage() {
           </div>
         </main>
       </div>
+
+      {/* Real-Time Auto-Captured Card Expense Toast (Bottom-Right with 5s Progress Bar) */}
+      {sseToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm w-full bg-[#11161F] border border-emerald-500/40 rounded-xl p-4 shadow-2xl shadow-emerald-500/10 animate-slide-up text-xs">
+          <div className="flex items-start justify-between gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white truncate">
+                  {formatINR(sseToast.amount)} spent at {sseToast.merchant}
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-500/20 text-emerald-300">
+                  AUTO
+                </span>
+              </div>
+              <p className="text-slate-400 text-[11px] mt-0.5">
+                Auto-captured via card •••• {sseToast.cardLast4} → {sseToast.category}
+              </p>
+              {sseToast.hasAnomaly && (
+                <div className="mt-1 text-rose-400 font-semibold text-[10px]">
+                  ⚠️ Flagged as potential anomaly for review
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setSseToast(null)}
+              className="text-slate-400 hover:text-white"
+            >
+              &times;
+            </button>
+          </div>
+          {/* 5-second animated progress bar */}
+          <div className="w-full bg-slate-800 h-1 rounded-full mt-3 overflow-hidden">
+            <div className="bg-emerald-500 h-full animate-[progress_5s_linear]" />
+          </div>
+        </div>
+      )}
 
       <AuthModal
         isOpen={authModalOpen}

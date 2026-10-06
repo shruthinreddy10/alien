@@ -248,6 +248,38 @@ export function initSchema(db: DatabaseSync) {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_inbox_user_status ON inbox_notifications(user_id, status, received_at DESC);
+
+    -- Demo Cards (PCI-DSS compliant: Tokenized, never stores full PAN or CVV)
+    CREATE TABLE IF NOT EXISTS demo_cards (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token TEXT UNIQUE NOT NULL,
+      brand TEXT NOT NULL CHECK(brand IN ('VISA', 'MASTERCARD', 'AMEX', 'RUPAY')),
+      last4 TEXT NOT NULL,
+      holder_name TEXT NOT NULL,
+      expiry_month INTEGER NOT NULL,
+      expiry_year INTEGER NOT NULL,
+      nickname TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      last_used_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_demo_cards_user ON demo_cards(user_id);
+    CREATE INDEX IF NOT EXISTS idx_demo_cards_token ON demo_cards(token);
+
+    -- Webhook Events (Idempotency & Replay Protection)
+    CREATE TABLE IF NOT EXISTS webhook_events (
+      id TEXT PRIMARY KEY,
+      reference TEXT UNIQUE NOT NULL,
+      event_type TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      signature TEXT NOT NULL,
+      received_at TEXT NOT NULL,
+      processed_at TEXT,
+      status TEXT NOT NULL CHECK(status IN ('RECEIVED', 'PROCESSED', 'FAILED', 'DUPLICATE')),
+      error TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_webhook_events_ref ON webhook_events(reference);
   `);
 
   // Run forward-only column migrations gracefully in case DB already exists
@@ -260,6 +292,10 @@ export function initSchema(db: DatabaseSync) {
   try { db.exec(`ALTER TABLE transactions ADD COLUMN is_recurring INTEGER NOT NULL DEFAULT 0;`); } catch (_) {}
   try { db.exec(`ALTER TABLE transactions ADD COLUMN recurrence_rule TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE transactions ADD COLUMN deleted_at TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE transactions ADD COLUMN source TEXT NOT NULL DEFAULT 'MANUAL' CHECK(source IN ('MANUAL', 'RECURRING', 'CSV_IMPORT', 'CARD_WEBHOOK', 'AI_SUGGESTED'));`); } catch (_) {}
+  try { db.exec(`ALTER TABLE transactions ADD COLUMN card_id TEXT REFERENCES demo_cards(id) ON DELETE SET NULL;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE transactions ADD COLUMN card_last4 TEXT;`); } catch (_) {}
+  try { db.exec(`ALTER TABLE transactions ADD COLUMN webhook_ref TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN level TEXT DEFAULT 'MEDIUM';`); } catch (_) {}
   try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN title TEXT;`); } catch (_) {}
   try { db.exec(`ALTER TABLE anomaly_alerts ADD COLUMN description TEXT;`); } catch (_) {}
