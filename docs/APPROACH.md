@@ -148,6 +148,15 @@ FinTrack follows a secure multi-tier modular architecture built within `src/`:
 - **Decision & Rationale:** Option 3 is chosen. System categories are immutable (`is_system = 1`). User categories with 0 txns delete instantly; categories with transactions require user intent choice and active budget warnings. All actions are logged with `category.delete` / `category.restore` audit events and allow instant 30-second reversal.
 - **Security & Performance Trade-offs:** Zero orphaned records, strict IDOR protection (403), user error resilience.
 
+### ADR-007: INR Localization & Payments Inbox Automation Architecture
+- **Status:** Accepted
+- **Context:** Personal finance platforms suffer from manual entry fatigue. Indian fintech applications require localized number formats (Lakh/Crore grouping `en-IN`), UPI/Card/Email notification digestion, and financial year (April–March) tax reporting.
+- **Options Considered:**
+  1. Rely exclusively on manual transaction modals with standard international formatting (`$ / €`).
+  2. Implement an automated Payments Inbox (`/inbox`) simulating real-world Indian UPI, Card Swipes, and Email receipts with one-tap confirmation, merchant auto-categorization with confidence scoring, and full integer paise calculations (`formatINR`).
+- **Decision & Rationale:** Option 2 chosen. Implemented `inbox_notifications` with strict user row-level scoping, an auto-categorization heuristic engine (Food Delivery, Groceries, Transport, Bills), one-click confirmation with atomic transaction creation, inline anomaly detection triggers, live simulated incoming notifications with real-time UI slide-in animation, and right-side Quick Add sheets with UPI reference tracking.
+- **Security & Performance Trade-offs:** Every inbox confirmation, simulation, and ignore event is recorded in the SHA-256 hash-chained audit log; IDOR is strictly blocked on all `/api/v1/inbox` endpoints.
+
 ---
 
 ## 5. Engineering Journal & Real-Time Decision Log
@@ -162,15 +171,21 @@ FinTrack follows a secure multi-tier modular architecture built within `src/`:
 - **Key Challenges:** Maintaining cryptographic audit chain consistency, handling soft-delete transactions across aggregates, and preventing IDOR across categories.
 - **Resolution:** Implemented `detectAnomaliesForTransaction`, created `/api/v1/categories/[id]` with undo session caching, and verified with 8/8 passing automated tests.
 
+### [2026-10-06 11:35 IST] Entry 3: FinTrack v4.0 — INR Localization, Payments Inbox & FinTech Design Overhaul
+- **Focus:** Full Indian Rupee localization (`formatINR` with `₹` prefix and `en-IN` lakh/crore digit grouping), elimination of generic AI gradients in favor of deep forest green (`#0F5132`) and elevated dark surfaces, Payments Inbox (`/inbox`) simulating UPI/Card/Email alerts with one-tap confirmation and live simulation, desktop right-side Quick Add sheet with UPI reference tracking, Financial Year (Apr–Mar) reporting toggle with GST/TDS tags, and India-specific seed data (Swiggy, Zomato, BigBasket, Blinkit, DMart, Jio, Rent, SIP).
+- **Key Challenges:** Ensuring all monetary columns feature tabular numerals and vertical decimal alignment without breaking existing backend minor-unit arithmetic, and keeping test suite green.
+- **Resolution:** Retained backward-compatible minor-unit (paise/cents) contracts, added `inbox_notifications` table and APIs, converted UI surfaces to clean hairline borders and tabular numbers, verified 8/8 tests passing.
+
 ---
 
 ## 6. Testing, Security Verification & Deployment Record
 
 ### 6.1 Testing & Security Verification Strategy
-- **Unit & Integration Tests:** End-to-end tests for password hashing, AES-256-GCM encryption/decryption, row-level authorization IDOR tests, and audit hash chain verification.
+- **Unit & Integration Tests:** End-to-end tests for password hashing, AES-256-GCM encryption/decryption, row-level authorization IDOR tests, audit hash chain verification, anomaly detection rules, and category deletion workflows. All 8 automated test suites passing (`npm test`).
 - **Static Analysis & Linting:** Strict TypeScript type checking (`tsc --noEmit`), ESLint validation.
 
 ### 6.2 Deployment Verification
 - **Live Deployment Platform:** Self-contained Next.js production build (`npm run build && npm start`) / Vercel ready.
 - **Deployment URL:** [To be populated upon deployment]
 - **Health Check Endpoint:** `/api/health`
+

@@ -17,7 +17,7 @@ import {
   X,
   Shield
 } from 'lucide-react';
-import { formatCents, parseToCents } from '@/lib/money';
+import { formatINR, parseToPaise, formatCents, parseToCents } from '@/lib/money';
 
 interface SettingsViewsProps {
   subTab: 'categories' | 'recurring' | 'subscriptions' | 'sessions' | 'security';
@@ -387,7 +387,7 @@ export default function SettingsViews({ subTab }: SettingsViewsProps) {
                               </div>
                               {c.budget_amount && (
                                 <div className="text-[11px] text-amber-400 font-mono mt-0.5">
-                                  Budget: {formatCents(c.budget_amount)}/month
+                                  Budget: {formatINR(c.budget_amount)}/month
                                 </div>
                               )}
                             </div>
@@ -603,7 +603,7 @@ export default function SettingsViews({ subTab }: SettingsViewsProps) {
                 {deleteModalCategory.budget_amount && (
                   <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs space-y-2">
                     <div className="text-rose-300 font-medium">
-                      ⚠️ This category has an active budget of {formatCents(deleteModalCategory.budget_amount)}/month.
+                      ⚠️ This category has an active budget of {formatINR(deleteModalCategory.budget_amount)}/month.
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer text-slate-200">
                       <input
@@ -665,13 +665,13 @@ export default function SettingsViews({ subTab }: SettingsViewsProps) {
                       <div className="font-semibold text-white">{r.merchant}</div>
                       <div className="text-[11px] text-slate-400 font-mono">Cadence: {r.cadence} &bull; Next: {r.next_run_at}</div>
                     </div>
-                    <div className="font-mono font-bold text-white">{formatCents(r.amount_minor)}</div>
+                    <div className="font-mono font-bold text-white tabular-nums">{formatINR(r.amount_minor)}</div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="lg:col-span-4 border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm space-y-4">
+            <div className="lg:col-span-4 border border-[var(--border-hairline)] bg-[var(--bg-elev-1)] rounded-xl p-6 shadow-sm space-y-4">
               <h3 className="text-sm font-semibold text-white">Create Recurring Rule</h3>
               <form onSubmit={handleCreateRecurring} className="space-y-3 text-xs">
                 <div>
@@ -679,25 +679,28 @@ export default function SettingsViews({ subTab }: SettingsViewsProps) {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Electric Bill, Rent"
+                    placeholder="e.g. Jio Fiber, House Rent"
                     value={recMerchant}
                     onChange={(e) => setRecMerchant(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white"
+                    className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-lg text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Amount ($ USD)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    placeholder="0.00"
-                    value={recAmountStr}
-                    onChange={(e) => setRecAmountStr(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono"
-                  />
+                  <label className="block text-slate-400 mb-1">Amount (₹ INR)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-slate-400 font-semibold">₹</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="0.00"
+                      value={recAmountStr}
+                      onChange={(e) => setRecAmountStr(e.target.value)}
+                      className="w-full pl-7 pr-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-lg text-white font-mono"
+                    />
+                  </div>
                 </div>
-                <button type="submit" className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold">
+                <button type="submit" className="w-full py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white rounded-lg font-semibold transition-all active:scale-95">
                   Add Recurring Rule
                 </button>
               </form>
@@ -709,10 +712,10 @@ export default function SettingsViews({ subTab }: SettingsViewsProps) {
       {/* 2.4 Subscription Detector */}
       {subTab === 'subscriptions' && (
         <div className="space-y-6">
-          <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm flex items-center justify-between">
+          <div className="border border-[var(--border-hairline)] bg-[var(--bg-elev-1)] rounded-xl p-6 shadow-sm flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-indigo-400" />
+                <CreditCard className="w-5 h-5 text-emerald-400" />
                 <span>Detected Recurring Subscriptions</span>
               </h2>
               <p className="text-xs text-slate-400 mt-1">Autonomous 90-day transaction analysis identifying recurring service subscriptions.</p>
@@ -721,12 +724,12 @@ export default function SettingsViews({ subTab }: SettingsViewsProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {subs.map((s) => (
-              <div key={s.id} className="border border-slate-800 bg-slate-900/90 rounded-xl p-5 shadow-sm space-y-2">
+              <div key={s.id} className="border border-[var(--border-hairline)] bg-[var(--bg-elev-1)] rounded-xl p-5 shadow-sm space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-sm text-white">{s.merchant}</h3>
-                  <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Active</span>
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Active</span>
                 </div>
-                <div className="text-xl font-bold font-mono text-white">{formatCents(s.amount_minor)}</div>
+                <div className="text-xl font-bold font-mono text-white tabular-nums">{formatINR(s.amount_minor)}</div>
                 <div className="text-[11px] text-slate-400 font-mono">Next charge: {s.next_charge_at}</div>
               </div>
             ))}

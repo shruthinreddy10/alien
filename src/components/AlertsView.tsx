@@ -13,7 +13,7 @@ import {
   Search,
   Calendar
 } from 'lucide-react';
-import { formatCents } from '@/lib/money';
+import { formatINR } from '@/lib/money';
 
 interface AlertsViewProps {
   onNavigateTab?: (tab: string) => void;
@@ -266,7 +266,7 @@ export default function AlertsView({ onNavigateTab }: AlertsViewProps) {
                       <span className="text-slate-400">Transaction:</span>
                       <span className="font-semibold text-white">{a.transaction_description || 'Unknown Merchant'}</span>
                       <span className="font-mono font-bold text-rose-400">
-                        {formatCents(a.transaction_amount)}
+                        {formatINR(a.transaction_amount)}
                       </span>
                       {a.category_name && (
                         <span className="text-slate-400">
@@ -361,7 +361,7 @@ export default function AlertsView({ onNavigateTab }: AlertsViewProps) {
                   {selectedTxModal.transaction_description || 'Unknown'}
                 </span>
                 <div className="text-base font-mono font-bold text-rose-400 pt-1">
-                  {formatCents(selectedTxModal.transaction_amount)}
+                  {formatINR(selectedTxModal.transaction_amount)}
                 </div>
               </div>
 

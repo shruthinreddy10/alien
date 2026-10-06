@@ -61,7 +61,9 @@ export async function GET(req: NextRequest) {
       transactionsCount: transactions.length,
       transactions: transactions.map((t) => ({
         ...t,
-        amountFormatted: `$${(t.amount_cents / 100).toFixed(2)}`,
+        currency: 'INR',
+        amount: Number((t.amount_cents / 100).toFixed(2)),
+        amountFormatted: `₹${(t.amount_cents / 100).toFixed(2)}`,
       })),
       budgets,
     };
@@ -82,8 +84,8 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Format CSV
-  const csvHeaders = ['Transaction ID', 'Date', 'Type', 'Category', 'Description', 'Amount (USD)', 'Amount (Cents)', 'Payment Method', 'Notes'];
+  // Format CSV with plain numbers and a "currency" column = "INR" per §1.3 specification
+  const csvHeaders = ['Transaction ID', 'Date', 'Type', 'Category', 'Description', 'Amount', 'Currency', 'Amount (Paise)', 'Payment Method', 'Notes'];
   const csvRows = transactions.map((t) => [
     `"${t.id}"`,
     `"${t.date}"`,
@@ -91,6 +93,7 @@ export async function GET(req: NextRequest) {
     `"${t.category || 'Uncategorized'}"`,
     `"${t.description.replace(/"/g, '""')}"`,
     `"${(t.amount_cents / 100).toFixed(2)}"`,
+    `"INR"`,
     t.amount_cents,
     `"${t.payment_method}"`,
     `"${(t.notes || '').replace(/"/g, '""')}"`,

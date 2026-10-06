@@ -12,7 +12,7 @@ import {
   Sliders,
   DollarSign
 } from 'lucide-react';
-import { formatCents } from '@/lib/money';
+import { formatINR } from '@/lib/money';
 
 export default function AdminAnalyticsView() {
   const [data, setData] = useState<any>(null);
@@ -77,7 +77,7 @@ export default function AdminAnalyticsView() {
         <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-5 shadow-sm space-y-1">
           <div className="text-xs text-slate-400">Total Transactions Ledgers</div>
           <div className="text-2xl font-bold font-mono text-white mt-1">{analytics.totalTransactions}</div>
-          <div className="text-[11px] text-slate-400 font-mono">Volume: {formatCents(analytics.totalVolumeCents)}</div>
+          <div className="text-[11px] text-slate-400 font-mono tabular-nums">Volume: {formatINR(analytics.totalVolumeCents)}</div>
         </div>
 
         <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-5 shadow-sm space-y-1">

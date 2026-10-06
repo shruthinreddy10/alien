@@ -230,6 +230,24 @@ export function initSchema(db: DatabaseSync) {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_cat_undo_user ON category_undo_sessions(user_id, created_at DESC);
+
+    -- Payments Inbox Notifications (Simulated UPI, Card, Email inputs)
+    CREATE TABLE IF NOT EXISTS inbox_notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      source TEXT NOT NULL CHECK(source IN ('UPI', 'CARD', 'EMAIL')),
+      amount_minor INTEGER NOT NULL,
+      merchant TEXT NOT NULL,
+      raw_payload TEXT NOT NULL,
+      suggested_category_id TEXT REFERENCES categories(id) ON DELETE SET NULL,
+      confidence TEXT NOT NULL DEFAULT 'MED' CHECK(confidence IN ('HIGH', 'MED', 'LOW')),
+      status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING', 'CONFIRMED', 'IGNORED')),
+      received_at TEXT NOT NULL,
+      confirmed_at TEXT,
+      transaction_id TEXT REFERENCES transactions(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_inbox_user_status ON inbox_notifications(user_id, status, received_at DESC);
   `);
 
   // Run forward-only column migrations gracefully in case DB already exists

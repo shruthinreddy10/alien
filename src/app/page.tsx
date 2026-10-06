@@ -10,6 +10,7 @@ import AuditLogsView from '@/components/AuditLogsView';
 import GoalsView from '@/components/GoalsView';
 import ReportsView from '@/components/ReportsView';
 import AlertsView from '@/components/AlertsView';
+import InboxView from '@/components/InboxView';
 import AdminUsersView from '@/components/AdminUsersView';
 import AdminSecurityView from '@/components/AdminSecurityView';
 import AdminHealthView from '@/components/AdminHealthView';
@@ -490,6 +491,10 @@ export default function HomePage() {
                     onOpenAddTx={() => setAddTxModalOpen(true)}
                     onNavigateTab={handleTabChange}
                   />
+                )}
+
+                {currentTab === 'inbox' && (
+                  <InboxView onRefreshDashboard={loadUserData} />
                 )}
 
                 {currentTab === 'transactions' && (

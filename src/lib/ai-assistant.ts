@@ -281,7 +281,7 @@ ${budgetNotice}
 - **Current Balance:** \`${summary.netBalanceFormatted}\`
 - **Total Income:** \`${summary.totalIncomeFormatted}\`
 - **Total Expenses:** \`${summary.totalExpenseFormatted}\`
-- **Top Expense Category:** **${topCategory?.category || 'None'}** (${topCategory?.amountFormatted || '$0.00'})
+- **Top Expense Category:** **${topCategory?.category || 'None'}** (${topCategory?.amountFormatted || '₹0.00'})
 
 #### Actionable Next Steps:
 1. Review your high-spend category **${topCategory?.category || 'expenses'}** representing **${topCategory?.percentageOfExpense || 0}%** of your total monthly outflow.

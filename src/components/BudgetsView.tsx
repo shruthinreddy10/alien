@@ -11,7 +11,7 @@ import {
   X,
   Target
 } from 'lucide-react';
-import { formatCents, parseToCents } from '@/lib/money';
+import { formatINR, parseToPaise } from '@/lib/money';
 
 interface Budget {
   id: string;
@@ -56,9 +56,9 @@ export default function BudgetsView({
     e.preventDefault();
     setError('');
 
-    const cents = parseToCents(amountStr);
-    if (cents <= 0) {
-      setError('Please provide a valid positive budget limit.');
+    const paise = parseToPaise(amountStr);
+    if (paise <= 0) {
+      setError('Please provide a valid positive budget limit in ₹.');
       return;
     }
 
@@ -69,7 +69,7 @@ export default function BudgetsView({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           categoryId: categoryId ? categoryId : null,
-          amount: cents, // Stored in integer minor units
+          amount: paise, // Stored in integer minor units (paise)
           period,
         }),
       });
@@ -133,20 +133,20 @@ export default function BudgetsView({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-[var(--border-hairline)] bg-[var(--bg-elev-1)] rounded-xl p-6 shadow-sm">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            <Target className="w-5 h-5 text-indigo-400" />
+            <Target className="w-5 h-5 text-emerald-400" />
             <span>Budget Control & Spending Caps</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time overspend alerts with strict integer minor-unit thresholds.
+            Real-time overspend alerts with strict integer minor-unit thresholds (₹ INR).
           </p>
         </div>
 
         <button
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/30 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white rounded-lg text-xs font-semibold shadow-md transition-all active:scale-95"
         >
           <Plus className="w-4 h-4" />
           <span>New Budget Limit</span>
@@ -157,34 +157,34 @@ export default function BudgetsView({
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-44 rounded-xl bg-slate-900 border border-slate-800" />
+            <div key={i} className="h-44 rounded-xl bg-[var(--bg-elev-1)] border border-[var(--border-hairline)]" />
           ))}
         </div>
       ) : budgets.length === 0 ? (
-        <div className="border border-slate-800 bg-slate-900/90 rounded-xl p-12 text-center space-y-3">
+        <div className="border border-[var(--border-hairline)] bg-[var(--bg-elev-1)] rounded-xl p-12 text-center space-y-3">
           <PieChart className="w-10 h-10 text-slate-500 mx-auto" />
           <h3 className="font-semibold text-slate-200">No active budget allocations</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Set an overall monthly cap or assign budgets to individual categories to keep your expenses on target.
+            Budgets keep you honest. Set an overall monthly cap or assign limits to individual categories to keep expenses on target.
           </p>
           <button
             onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-md"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white rounded-lg text-xs font-semibold shadow-md"
           >
             <Plus className="w-4 h-4" />
-            <span>Create Budget</span>
+            <span>Set Budget in 30 seconds</span>
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {budgets.map((b) => (
-            <div key={b.id} className="border border-slate-800 bg-slate-900/90 rounded-xl p-6 shadow-sm flex flex-col justify-between hover:border-slate-700 transition-colors">
+            <div key={b.id} className="border border-[var(--border-hairline)] bg-[var(--bg-elev-1)] rounded-xl p-6 shadow-sm flex flex-col justify-between hover:border-slate-700 transition-colors">
               <div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div
                       className="w-3.5 h-3.5 rounded-full"
-                      style={{ backgroundColor: b.categoryColor || '#6366F1' }}
+                      style={{ backgroundColor: b.categoryColor || '#0F5132' }}
                     />
                     <h3 className="font-bold text-sm text-white">{b.categoryName}</h3>
                   </div>
@@ -204,15 +204,15 @@ export default function BudgetsView({
                 {/* Progress bar */}
                 <div className="mt-5 space-y-2">
                   <div className="flex items-baseline justify-between text-xs">
-                    <span className="text-slate-400 font-mono">
-                      Spent: <strong className="text-white">{formatCents(b.spentAmount)}</strong>
+                    <span className="text-slate-400 tabular-nums">
+                      Spent: <strong className="text-white">{formatINR(b.spentAmount)}</strong>
                     </span>
-                    <span className="font-mono text-slate-400">
-                      Cap: {formatCents(b.limitAmount)}
+                    <span className="tabular-nums text-slate-400">
+                      Cap: {formatINR(b.limitAmount)}
                     </span>
                   </div>
 
-                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-[var(--bg-base)] h-2 rounded-full overflow-hidden border border-[var(--border-hairline)]">
                     <div
                       style={{ width: `${Math.min(b.percentage, 100)}%` }}
                       className={`h-full rounded-full transition-all duration-500 ${
@@ -228,13 +228,13 @@ export default function BudgetsView({
               </div>
 
               {/* Card Footer */}
-              <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-mono">
+              <div className="mt-5 pt-3 border-t border-[var(--border-hairline)] flex items-center justify-between text-xs">
+                <span className="text-slate-400 tabular-nums">
                   {b.percentage}% consumed
                 </span>
-                <span className={`font-mono font-semibold ${b.remainingAmount < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                <span className={`tabular-nums font-semibold ${b.remainingAmount < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                   {b.remainingAmount < 0 ? 'Exceeded by ' : 'Remaining: '}
-                  {formatCents(Math.abs(b.remainingAmount))}
+                  {formatINR(Math.abs(b.remainingAmount))}
                 </span>
               </div>
             </div>
@@ -245,8 +245,8 @@ export default function BudgetsView({
       {/* Create Budget Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div className="bg-[var(--bg-elev-1)] border border-[var(--border-hairline)] w-full max-w-md p-6 rounded-2xl shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-hairline)]">
               <h3 className="font-bold text-sm text-white">Create Budget Allocation</h3>
               <button
                 onClick={() => setModalOpen(false)}
@@ -268,7 +268,7 @@ export default function BudgetsView({
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-lg text-white focus:outline-none focus:border-emerald-500"
                 >
                   <option value="" className="bg-slate-900 text-white">
                     Overall Monthly Budget (All Expenses)
@@ -282,18 +282,21 @@ export default function BudgetsView({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Budget Limit ($ USD)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  placeholder="e.g. 500.00"
-                  value={amountStr}
-                  onChange={(e) => setAmountStr(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-indigo-500"
-                />
+                <label className="block text-slate-300 font-medium mb-1">Budget Limit (₹ INR)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-slate-400 font-semibold">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 15000.00"
+                    value={amountStr}
+                    onChange={(e) => setAmountStr(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-lg text-white font-mono text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Recorded in integer minor units ({parseToCents(amountStr)} cents)
+                  Recorded in integer minor units ({parseToPaise(amountStr)} paise)
                 </p>
               </div>
 
@@ -302,7 +305,7 @@ export default function BudgetsView({
                 <select
                   value={period}
                   onChange={(e) => setPeriod(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 bg-[var(--bg-base)] border border-[var(--border-hairline)] rounded-lg text-white focus:outline-none focus:border-emerald-500"
                 >
                   <option value="MONTHLY" className="bg-slate-900 text-white">Monthly</option>
                   <option value="YEARLY" className="bg-slate-900 text-white">Yearly</option>
@@ -313,14 +316,14 @@ export default function BudgetsView({
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
+                  className="px-4 py-2 rounded-lg bg-[var(--bg-elev-2)] hover:bg-[var(--bg-elev-3)] text-slate-300 font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-md disabled:opacity-50"
+                  className="px-4 py-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white rounded-lg font-semibold shadow-md disabled:opacity-50 transition-all active:scale-95"
                 >
                   {submitting ? 'Saving...' : 'Set Budget Limit'}
                 </button>

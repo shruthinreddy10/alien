@@ -2,36 +2,105 @@
 
 @layer base {
   :root {
-    --bg-main: #020617;
-    --bg-card: #0f172a;
-    --border-card: #1e293b;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --accent-emerald: #10b981;
-    --accent-indigo: #6366f1;
+    /* 2.1 FINTECH-NATIVE COLOR SYSTEM: Midnight Navy & Deep Emerald */
+    --bg-base: #0A0E14;
+    --bg-elev-1: #11161F;
+    --bg-elev-2: #1A2029;
+    --bg-elev-3: #232A35;
+    
+    --border-hairline: rgba(255, 255, 255, 0.06);
+    --border-subtle: rgba(255, 255, 255, 0.10);
+    
+    --brand-primary: #0F5132;
+    --brand-emerald: #10B981;
+    --brand-accent: #F59E0B;
+    
+    --income-green: #22C55E;
+    --expense-red: #EF4444;
+    --warning-amber: #F59E0B;
+    
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
   }
 
   body {
-    background-color: #020617;
-    color: #f8fafc;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #0A0E14;
+    color: #F8FAFC;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Geist", "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    letter-spacing: -0.011em;
   }
 }
 
-/* Custom Scrollbar */
+/* Tabular numbers for all monetary values */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Shimmer animation for realistic skeletons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+/* Micro-interactions: 1px lift and subtle border highlight */
+.fintech-card {
+  background: #11161F;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.fintech-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+}
+
+.fintech-row {
+  transition: background-color 140ms ease, border-left-color 140ms ease;
+  border-left: 2px solid transparent;
+}
+
+.fintech-row:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+  border-left-color: #10B981;
+}
+
+/* Button tactile press feedback */
+.fintech-btn {
+  transition: transform 120ms ease, background-color 140ms ease, opacity 140ms ease;
+}
+
+.fintech-btn:active {
+  transform: scale(0.98);
+}
+
+/* Custom Minimal Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: #0A0E14;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #1A2029;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #232A35;
 }

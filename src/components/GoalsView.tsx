@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Target, Plus, CheckCircle2, TrendingUp, Calendar, X } from 'lucide-react';
-import { formatCents, parseToCents } from '@/lib/money';
+import { formatINR, parseToPaise } from '@/lib/money';
 
 export default function GoalsView() {
   const [goals, setGoals] = useState<any[]>([]);
@@ -32,8 +32,8 @@ export default function GoalsView() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const tMinor = parseToCents(targetStr);
-    const cMinor = parseToCents(currentStr || '0');
+    const tMinor = parseToPaise(targetStr);
+    const cMinor = parseToPaise(currentStr || '0');
     if (!name || tMinor <= 0) return;
 
     await fetch('/api/goals', {
@@ -90,8 +90,8 @@ export default function GoalsView() {
 
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs font-mono text-slate-400">
-                    <span>Saved: <strong className="text-white">{formatCents(g.current_minor)}</strong></span>
-                    <span>Target: {formatCents(g.target_minor)}</span>
+                    <span className="tabular-nums">Saved: <strong className="text-white">{formatINR(g.current_minor)}</strong></span>
+                    <span className="tabular-nums">Target: {formatINR(g.target_minor)}</span>
                   </div>
                   <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
                     <div style={{ width: `${pct}%` }} className="h-full bg-emerald-500 rounded-full transition-all duration-500" />
@@ -134,28 +134,34 @@ export default function GoalsView() {
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Target Amount ($ USD)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  placeholder="0.00"
-                  value={targetStr}
-                  onChange={(e) => setTargetStr(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono"
-                />
+                <label className="block text-slate-400 mb-1">Target Amount (₹ INR)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-slate-400 font-semibold">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="0.00"
+                    value={targetStr}
+                    onChange={(e) => setTargetStr(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Starting Amount ($ USD)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={currentStr}
-                  onChange={(e) => setCurrentStr(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono"
-                />
+                <label className="block text-slate-400 mb-1">Starting Amount (₹ INR)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-slate-400 font-semibold">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={currentStr}
+                    onChange={(e) => setCurrentStr(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-white font-mono"
+                  />
+                </div>
               </div>
 
               <div>
