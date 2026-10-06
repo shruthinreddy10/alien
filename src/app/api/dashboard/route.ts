@@ -20,9 +20,10 @@ export async function GET(req: NextRequest) {
     WHERE user_id = ? AND deleted_at IS NULL
   `).get(userId) as { total_income: number; total_expense: number; total_transactions: number };
 
-  const totalIncome = totals.total_income;
-  const totalExpense = totals.total_expense;
+  const totalIncome = totals?.total_income ?? 0;
+  const totalExpense = totals?.total_expense ?? 0;
   const totalBalance = totalIncome - totalExpense;
+  const transactionCount = totals?.total_transactions ?? 0;
   const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
 
   // 2. Spending by Category (Expenses only)
@@ -75,8 +76,8 @@ export async function GET(req: NextRequest) {
   const monthlyTrends = db.prepare(`
     SELECT 
       substr(date, 1, 7) as month,
-      SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END) as income,
-      SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END) as expense
+      COALESCE(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END), 0) as income,
+      COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) as expense
     FROM transactions
     WHERE user_id = ? AND deleted_at IS NULL
     GROUP BY month
@@ -144,12 +145,12 @@ export async function GET(req: NextRequest) {
       totalIncome,
       totalExpense,
       savingsRate,
-      transactionCount: totals.total_transactions,
+      transactionCount,
     },
-    categorySpending,
-    recentTransactions,
-    monthlyTrends,
-    flaggedTransactions,
+    categorySpending: categorySpending || [],
+    recentTransactions: recentTransactions || [],
+    monthlyTrends: monthlyTrends || [],
+    flaggedTransactions: flaggedTransactions || [],
     overallBudget: {
       limit: overallLimit,
       spent: currentMonthSpent,

@@ -103,14 +103,18 @@ export default function DashboardView({
     );
   }
 
-  const { 
-    kpis = { totalBalance: 0, totalIncome: 0, totalExpense: 0, savingsRate: 0, transactionCount: 0 }, 
-    categorySpending = [], 
-    recentTransactions = [], 
-    monthlyTrends = [], 
-    overallBudget = { limit: 0, spent: 0, remainingCents: 0, percentage: 0, status: 'Healthy' as const }, 
-    flaggedTransactions = [] 
-  } = data || {};
+  const kpis = {
+    totalBalance: data?.kpis?.totalBalance ?? 0,
+    totalIncome: data?.kpis?.totalIncome ?? 0,
+    totalExpense: data?.kpis?.totalExpense ?? 0,
+    savingsRate: data?.kpis?.savingsRate ?? 0,
+    transactionCount: data?.kpis?.transactionCount ?? 0,
+  };
+  const categorySpending = Array.isArray(data?.categorySpending) ? data.categorySpending : [];
+  const recentTransactions = Array.isArray(data?.recentTransactions) ? data.recentTransactions : [];
+  const monthlyTrends = Array.isArray(data?.monthlyTrends) ? data.monthlyTrends : [];
+  const overallBudget = data?.overallBudget || { limit: 0, spent: 0, remainingCents: 0, percentage: 0, status: 'Healthy' as const };
+  const flaggedTransactions = Array.isArray(data?.flaggedTransactions) ? data.flaggedTransactions : [];
 
   const handleExport = (format: 'csv' | 'json') => {
     window.location.href = `/api/export?format=${format}`;

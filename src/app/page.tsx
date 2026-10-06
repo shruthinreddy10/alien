@@ -92,6 +92,15 @@ export default function HomePage() {
       if (dashRes.ok) {
         const dJson = await dashRes.json();
         setDashboardData(dJson);
+      } else {
+        setDashboardData({
+          kpis: { totalBalance: 0, totalIncome: 0, totalExpense: 0, savingsRate: 0, transactionCount: 0 },
+          categorySpending: [],
+          recentTransactions: [],
+          monthlyTrends: [],
+          overallBudget: { limit: 0, spent: 0, remainingCents: 0, percentage: 0, status: 'Healthy' },
+          flaggedTransactions: [],
+        });
       }
       if (catRes.ok) {
         const cJson = await catRes.json();
@@ -103,8 +112,23 @@ export default function HomePage() {
       }
     } catch (e) {
       console.error('Failed to load user data:', e);
+      setDashboardData({
+        kpis: { totalBalance: 0, totalIncome: 0, totalExpense: 0, savingsRate: 0, transactionCount: 0 },
+        categorySpending: [],
+        recentTransactions: [],
+        monthlyTrends: [],
+        overallBudget: { limit: 0, spent: 0, remainingCents: 0, percentage: 0, status: 'Healthy' },
+        flaggedTransactions: [],
+      });
     }
   }, [user]);
+
+  // Automatically fetch dashboard metrics whenever an authenticated user session is active
+  useEffect(() => {
+    if (user && user.role === 'USER') {
+      loadUserData();
+    }
+  }, [user, loadUserData]);
 
   // Realtime Webhook Captured Toast State
   const [sseToast, setSseToast] = useState<{
